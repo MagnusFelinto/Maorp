@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -6,200 +5,186 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador de Alocação Orçamentária - Modelo Integrado TCC</title>
     
-    <!-- Tailwind CSS -->
+    <!-- Bibliotecas Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <!-- Font Awesome -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .card { background: white; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; }
         .input-field { width: 100%; border: 1px solid #d1d5db; padding: 0.5rem; border-radius: 0.375rem; transition: border-color 0.2s; }
         .input-field:focus { outline: none; border-color: #3b82f6; ring: 2px solid #93c5fd; }
         .filter-btn { padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
-        .filter-btn-inactive { background-color: #e5e7eb; color: #4b5563; }
-        .filter-btn-active { background-color: #2563eb; color: white; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3); }
+        .filter-btn-inactive { background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+        .filter-btn-active { background-color: #3b82f6; color: white; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); border: 1px solid #3b82f6; }
         
-        /* Custom Scrollbar for Table */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Tooltip Customizado */
-        .tooltip-container { position: relative; display: inline-flex; align-items: center; }
-        .tooltip-text { 
-            visibility: hidden; 
-            width: 200px; 
-            background-color: #1e293b; 
-            color: #fff; 
-            text-align: center; 
-            border-radius: 6px; 
-            padding: 8px; 
-            position: absolute; 
-            z-index: 50; 
-            bottom: 125%; 
-            left: 50%; 
-            margin-left: -100px; 
-            opacity: 0; 
-            transition: opacity 0.3s; 
-            font-size: 10px; 
-            font-weight: normal;
-            line-height: 1.4;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        /* Tooltip Avançado */
+        .tooltip-container { position: relative; display: inline-flex; align-items: center; justify-content: center; margin-left: 4px; cursor: help; }
+        .tooltip-trigger { color: #94a3b8; transition: color 0.2s; }
+        .tooltip-trigger:hover { color: #3b82f6; }
+        .tooltip-content { 
+            visibility: hidden; width: 240px; background-color: #1e293b; color: #fff; text-align: left; 
+            border-radius: 6px; padding: 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; 
+            transform: translateX(-50%); opacity: 0; transition: opacity 0.3s, transform 0.3s; 
+            font-size: 11px; font-weight: normal; line-height: 1.4; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            pointer-events: none;
         }
-        .tooltip-text::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #1e293b transparent transparent transparent;
-        }
-        .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
+        .tooltip-container:hover .tooltip-content { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
+        .tooltip-content::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
     </style>
 </head>
 <body class="p-4 md:p-6 text-slate-800">
 
-    <!-- Cabeçalho -->
-    <header class="mb-6 text-center">
-        <h1 class="text-3xl font-bold text-slate-900">Simulador de Alocação Orçamentária</h1>
-        <p class="text-slate-500 text-sm">Modelo Integrado de Otimização Combinatória Multicritério (Versão Robusta)</p>
+    <header class="mb-6 flex justify-between items-end border-b pb-4 border-slate-200">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Simulador Orçamentário</h1>
+            <p class="text-slate-500 text-sm">Otimização Multicritério com Análise de Robustez</p>
+        </div>
+        <div class="text-right">
+            <div class="text-xs font-bold text-slate-400 uppercase">Total de Registros</div>
+            <div class="text-2xl font-bold text-blue-600" id="headerTotalRows">0</div>
+        </div>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-screen-2xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1600px] mx-auto">
         
         <!-- COLUNA 1: CONFIGURAÇÃO (3 colunas) -->
         <div class="lg:col-span-3 space-y-5">
             
-            <!-- Dados de Entrada -->
-            <div class="card p-4 border-t-4 border-blue-600">
-                <h2 class="text-base font-bold mb-3 text-blue-800 flex items-center gap-2"><i class="fa-solid fa-database"></i> 1. Dados de Entrada</h2>
+            <!-- Card 1: Dados -->
+            <div class="card p-4 border-t-4 border-blue-500">
+                <h2 class="text-sm font-bold mb-3 text-slate-800 uppercase tracking-wide flex items-center">
+                    <i class="fa-solid fa-database mr-2 text-blue-500"></i> 1. Carregar Dados
+                </h2>
                 
                 <div class="flex flex-col gap-3">
-                    <button onclick="gerarDadosFicticios()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 py-2 px-4 rounded transition flex items-center justify-center gap-2 text-sm font-semibold">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Base Fictícia
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="gerarDadosFicticios()" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 py-2 px-2 rounded transition text-xs font-semibold">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Exemplo
+                        </button>
+                        <a href="https://docs.google.com/spreadsheets/d/1FL6M1L7uwvIwSWZbdShmOoX00db1hAyj_5h4jLlzUjQ/export?format=xlsx" 
+                           class="flex-1 bg-white hover:bg-green-50 text-green-700 border border-green-200 py-2 px-2 rounded transition text-xs font-semibold no-underline text-center"
+                           target="_blank">
+                            <i class="fa-solid fa-file-excel"></i> Modelo
+                        </a>
+                    </div>
                     
                     <div class="relative py-2">
-                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
-                        <div class="relative flex justify-center text-[10px] uppercase"><span class="px-2 bg-white text-gray-400">Ou Importar CSV</span></div>
+                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+                        <div class="relative flex justify-center text-[10px] uppercase bg-white px-2 text-slate-400 font-bold">Arquivo Real</div>
                     </div>
 
-                    <div class="bg-yellow-50 border border-yellow-100 p-3 rounded text-xs text-yellow-800 mb-2">
-                        <p class="font-bold mb-1"><i class="fa-solid fa-file-csv"></i> Formato do Arquivo:</p>
-                        <ul class="list-disc pl-4 space-y-1 text-[10px]">
-                            <li><strong>ID</strong> (Identificador)</li>
-                            <li><strong>CUSTO</strong> (Valor Monetário)</li>
-                            <li><strong>TIPO_PROBLEMA</strong> (Categoria)</li>
-                            <li><strong>VOTOS</strong> (Apoio Popular)</li>
-                        </ul>
-                    </div>
-
-                    <label class="block">
-                        <input type="file" id="csvFile" accept=".csv" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200" />
+                    <label class="block group cursor-pointer">
+                        <input type="file" id="csvFile" accept=".csv, .xls, .xlsx" class="hidden" />
+                        <div class="w-full border-2 border-dashed border-slate-300 rounded-lg p-4 text-center group-hover:border-blue-400 transition bg-slate-50" id="dropZone">
+                            <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-xl mb-1"></i>
+                            <p class="text-xs text-slate-500 font-medium">Clique para selecionar</p>
+                            <p class="text-[9px] text-slate-400">.CSV, .XLSX (Max 50MB)</p>
+                        </div>
                     </label>
-                    <p id="dataStatus" class="text-xs font-bold text-red-500 mt-1 text-center">Nenhum dado carregado.</p>
+                    
+                    <div id="importStatus" class="hidden p-2 bg-blue-50 border border-blue-100 rounded text-xs">
+                        <p id="dataStatus" class="font-bold text-blue-700">Processando...</p>
+                        <p id="colunasDetectadas" class="text-[9px] text-blue-500 mt-1 truncate"></p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Parâmetros Globais -->
-            <div class="card p-4 border-t-4 border-emerald-600">
-                <h2 class="text-base font-bold mb-3 text-emerald-800 flex items-center gap-2"><i class="fa-solid fa-sliders"></i> 2. Parâmetros</h2>
+            <!-- Card 2: Parâmetros -->
+            <div class="card p-4 border-t-4 border-emerald-500">
+                <h2 class="text-sm font-bold mb-3 text-slate-800 uppercase tracking-wide flex items-center">
+                    <i class="fa-solid fa-sliders mr-2 text-emerald-500"></i> 2. Parâmetros
+                </h2>
                 
                 <div class="flex items-center justify-between mb-1">
-                    <label class="block text-xs font-bold text-gray-500 uppercase">Orçamento Total (B)</label>
+                    <label class="block text-xs font-bold text-slate-500">ORÇAMENTO TOTAL</label>
                     <div class="tooltip-container">
-                        <i class="fa-solid fa-circle-info text-gray-400 hover:text-blue-500 cursor-help text-xs"></i>
-                        <span class="tooltip-text">Teto financeiro disponível. O modelo tentará encaixar o máximo de projetos dentro deste valor.</span>
+                        <i class="fa-solid fa-circle-info tooltip-trigger"></i>
+                        <div class="tooltip-content">Limite financeiro total disponível para a seleção de projetos. Projetos que excederem este valor (após priorização) serão cortados.</div>
                     </div>
                 </div>
                 <div class="relative mb-4">
-                    <span class="absolute left-3 top-2 text-gray-400 text-sm">R$</span>
-                    <input type="number" id="orcamentoB" value="1000000" class="input-field font-mono text-right pl-8 text-sm">
+                    <span class="absolute left-3 top-2 text-slate-400 text-sm font-bold">R$</span>
+                    <input type="number" id="orcamentoB" value="1000000" class="input-field font-mono text-right pl-8 text-sm font-bold text-slate-700">
                 </div>
 
-                <div class="flex justify-between items-center mb-2 border-b pb-1">
-                    <h3 class="font-bold text-xs text-gray-800">Alphas Iniciais</h3>
-                    <span class="text-[10px] text-gray-400">∑ = 1.0</span>
+                <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-1">
+                    <h3 class="font-bold text-xs text-slate-800">Pesos da Função Objetivo</h3>
+                    <span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1 rounded">∑ = 1.0</span>
                 </div>
                 
-                <div class="space-y-3 bg-gray-50 p-3 rounded-md border border-gray-200">
+                <div class="space-y-4">
                     <div>
-                        <label class="text-[10px] font-bold text-gray-600 flex justify-between items-center">
-                            <div class="flex items-center gap-1">
-                                α1 - Impacto Social
-                                <div class="tooltip-container">
-                                    <i class="fa-solid fa-circle-info text-gray-400 hover:text-blue-500 cursor-help text-[10px]"></i>
-                                    <span class="tooltip-text">Peso dado à popularidade (Votos).</span>
-                                </div>
-                            </div>
-                            <span id="valA1" class="text-blue-600 font-bold">0.35</span>
+                        <label class="text-[10px] font-bold text-slate-600 flex justify-between items-center mb-1">
+                            <div class="flex items-center">Impacto Social (Votos)<div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-trigger"></i><div class="tooltip-content">Peso atribuído à popularidade. Aumentar este valor favorece projetos com muitos votos, independentemente do custo.</div></div></div>
+                            <span id="valA1" class="text-blue-600 font-bold bg-blue-50 px-1 rounded">0.35</span>
                         </label>
-                        <input type="range" id="alpha1" step="0.01" min="0" max="1" value="0.35" class="w-full accent-blue-600 alpha-input h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="validarAlphas()">
+                        <input type="range" id="alpha1" step="0.01" min="0" max="1" value="0.35" class="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer" oninput="validarAlphas()">
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold text-gray-600 flex justify-between items-center">
-                            <div class="flex items-center gap-1">
-                                α2 - Eficiência Global
-                                <div class="tooltip-container">
-                                    <i class="fa-solid fa-circle-info text-gray-400 hover:text-green-500 cursor-help text-[10px]"></i>
-                                    <span class="tooltip-text">Peso dado ao baixo custo.</span>
-                                </div>
-                            </div>
-                            <span id="valA2" class="text-green-600 font-bold">0.50</span>
+                        <label class="text-[10px] font-bold text-slate-600 flex justify-between items-center mb-1">
+                            <div class="flex items-center">Eficiência (Custo)<div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-trigger"></i><div class="tooltip-content">Peso atribuído ao baixo custo. Aumentar este valor favorece projetos mais baratos, permitindo realizar mais obras.</div></div></div>
+                            <span id="valA2" class="text-green-600 font-bold bg-green-50 px-1 rounded">0.50</span>
                         </label>
-                        <input type="range" id="alpha2" step="0.01" min="0" max="1" value="0.50" class="w-full accent-green-600 alpha-input h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="validarAlphas()">
+                        <input type="range" id="alpha2" step="0.01" min="0" max="1" value="0.50" class="w-full accent-green-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer" oninput="validarAlphas()">
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold text-gray-600 flex justify-between items-center">
-                            <div class="flex items-center gap-1">
-                                α3 - Equidade
-                                <div class="tooltip-container">
-                                    <i class="fa-solid fa-circle-info text-gray-400 hover:text-purple-500 cursor-help text-[10px]"></i>
-                                    <span class="tooltip-text">Peso para proteção de categorias menores.</span>
-                                </div>
-                            </div>
-                            <span id="valA3" class="text-purple-600 font-bold">0.15</span>
+                        <label class="text-[10px] font-bold text-slate-600 flex justify-between items-center mb-1">
+                            <div class="flex items-center">Equidade (Concorrência)<div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-trigger"></i><div class="tooltip-content">Fator de proteção para categorias com poucos projetos. Aumentar este valor ajuda setores menores a competirem com os grandes.</div></div></div>
+                            <span id="valA3" class="text-purple-600 font-bold bg-purple-50 px-1 rounded">0.15</span>
                         </label>
-                        <input type="range" id="alpha3" step="0.01" min="0" max="1" value="0.15" class="w-full accent-purple-600 alpha-input h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="validarAlphas()">
+                        <input type="range" id="alpha3" step="0.01" min="0" max="1" value="0.15" class="w-full accent-purple-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer" oninput="validarAlphas()">
                     </div>
-                    
-                    <div id="alphaStatus" class="mt-2 text-[10px] font-bold p-1 rounded text-center"></div>
-                    
-                    <div id="infoAdaptativo" class="hidden mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-[10px] text-yellow-800 leading-tight">
-                        <!-- Preenchido após simulação -->
-                    </div>
+                    <div id="alphaStatus" class="text-[10px] font-bold text-center pt-1"></div>
                 </div>
             </div>
 
-            <!-- Regras por Setor -->
-            <div class="card p-4 border-t-4 border-purple-600">
-                <h2 class="text-base font-bold mb-3 text-purple-800 flex items-center gap-2"><i class="fa-solid fa-scale-balanced"></i> 3. Regras Setoriais</h2>
+            <!-- Card 3: Regras Setoriais -->
+            <div class="card p-4 border-t-4 border-purple-500 flex flex-col h-[350px]">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center">
+                        <i class="fa-solid fa-scale-balanced mr-2 text-purple-500"></i> 3. Regras
+                    </h2>
+                    <span id="catCountBadge" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">0 Setores</span>
+                </div>
                 
-                <div class="grid grid-cols-12 gap-1 mb-2 text-[9px] font-bold text-gray-500 uppercase tracking-wider text-center items-end">
-                    <div class="col-span-4 text-left pl-1">Setor</div>
-                    <div class="col-span-4 text-red-600 flex justify-center items-center gap-1">Min %</div>
-                    <div class="col-span-4 text-orange-600 flex justify-center items-center gap-1">Peso Pol.</div>
+                <div class="grid grid-cols-12 gap-1 mb-1 text-[9px] font-bold text-slate-500 uppercase text-center bg-slate-100 p-1.5 rounded">
+                    <div class="col-span-6 text-left">Setor</div>
+                    <div class="col-span-3 text-red-600 flex justify-center items-center gap-1">
+                        Min %
+                        <div class="tooltip-container">
+                            <i class="fa-solid fa-circle-info text-slate-400 text-[8px]"></i>
+                            <div class="tooltip-content">Mínimo orçamentário obrigatório (0-100%). O algoritmo reservará este percentual do orçamento total para esta categoria.</div>
+                        </div>
+                    </div>
+                    <div class="col-span-3 text-orange-600 flex justify-center items-center gap-1">
+                        Peso (0-10)
+                        <div class="tooltip-container">
+                            <i class="fa-solid fa-circle-info text-slate-400 text-[8px]"></i>
+                            <div class="tooltip-content">Peso Político da categoria (0 a 10). Aumenta o score final dos projetos desta categoria artificialmente.</div>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="categoryConfig" class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                    <!-- Gerado via JS -->
+                <div id="categoryConfig" class="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-1">
+                    <div class="text-center text-xs text-slate-400 italic mt-10">Carregue um arquivo para configurar regras por setor.</div>
                 </div>
 
-                <div id="rigidezAlert" class="mt-3 text-[10px] font-bold p-2 rounded bg-gray-100 text-center border">
+                <div id="rigidezAlert" class="mt-2 text-[10px] font-bold p-2 rounded bg-slate-50 text-center border border-slate-200 text-slate-400">
                     Aguardando dados...
                 </div>
             </div>
 
-            <button id="btnExecutar" onclick="executarSimulacao()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-wide">
-                <i class="fa-solid fa-rocket mr-2"></i> Executar Simulação
+            <button id="btnExecutar" onclick="executarSimulacao()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-wide flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rocket"></i> Executar Simulação
             </button>
         </div>
 
@@ -207,160 +192,168 @@
         <div class="lg:col-span-9 flex flex-col gap-5">
             
             <!-- Filtros -->
-            <div class="card p-2 flex flex-wrap gap-2 items-center pl-4" id="filterBar" style="display:none;">
-                <span class="text-xs font-bold text-gray-400 uppercase mr-2"><i class="fa-solid fa-filter"></i> Filtrar Dashboard:</span>
-                <!-- Botões via JS -->
+            <div class="card p-2 flex flex-wrap gap-2 items-center pl-4 min-h-[50px]" id="filterBar">
+                <span class="text-xs font-bold text-slate-400 uppercase mr-2"><i class="fa-solid fa-filter"></i> Filtrar Visão:</span>
+                <span class="text-xs italic text-slate-300">Execute a simulação primeiro.</span>
             </div>
 
-            <!-- KPIs Expandidos (Grid com 6 colunas) -->
+            <!-- KPIs -->
             <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-                <!-- KPI 1: Projetos -->
-                <div class="card p-3 border-l-4 border-blue-500 relative group">
-                    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <i class="fa-solid fa-circle-info text-blue-300 text-xs"></i>
-                    </div>
-                    <p class="text-[10px] text-gray-500 uppercase font-bold">Projetos (Sel./Total)</p>
-                    <div class="flex items-baseline gap-1">
-                        <p class="text-xl font-bold text-gray-800" id="resSelecionados">-</p>
-                        <span class="text-xs text-gray-400">/ <span id="resTotalProjetos">-</span></span>
-                    </div>
-                    <p class="text-[10px] text-blue-600 font-semibold" id="resPctProjetos">0% Aprovado</p>
+                <!-- KPI 1 -->
+                <div class="card p-3 border-l-4 border-blue-500 relative">
+                    <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Número de projetos aprovados em relação ao total disponível no filtro atual.</div></div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">Projetos Aprovados</p>
+                    <div class="flex gap-1 items-baseline mt-1"><p class="text-xl font-bold text-slate-800" id="resSelecionados">-</p><span class="text-xs text-slate-400">/ <span id="resTotalProjetos">-</span></span></div>
+                    <p class="text-[10px] text-blue-600 font-semibold" id="resPctProjetos">0%</p>
                 </div>
-
-                <!-- KPI 2: Orçamento -->
-                <div class="card p-3 border-l-4 border-yellow-500">
-                    <p class="text-[10px] text-gray-500 uppercase font-bold">Execução Orçamentária</p>
-                    <p class="text-lg font-bold text-gray-800 truncate" id="resOrcamento">-</p>
-                    <p class="text-[10px] text-gray-400" id="resEficienciaOrc">-</p>
+                <!-- KPI 2 -->
+                <div class="card p-3 border-l-4 border-yellow-500 relative">
+                    <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Total financeiro alocado para os projetos selecionados neste cenário.</div></div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">Orçamento Usado</p>
+                    <p class="text-lg font-bold text-slate-800 truncate mt-1" id="resOrcamento">-</p>
+                    <p class="text-[10px] text-yellow-600 font-semibold" id="resEficienciaOrc">-</p>
                 </div>
-
-                <!-- KPI 3: Utilidade Média -->
-                <div class="card p-3 border-l-4 border-indigo-500 relative group">
-                    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity tooltip-container">
-                        <i class="fa-solid fa-circle-info text-indigo-300 text-xs cursor-help"></i>
-                        <span class="tooltip-text right-0 left-auto margin-0 bottom-full translate-x-0">Média do Score de Utilidade Final dos projetos selecionados.</span>
-                    </div>
-                    <p class="text-[10px] text-gray-500 uppercase font-bold">Utilidade Média</p>
-                    <div class="flex items-baseline gap-1">
-                        <p class="text-xl font-bold text-gray-800" id="resUtilidadeMedia">-</p>
-                    </div>
-                    <p class="text-[10px] text-indigo-600 font-semibold">Qualidade Global</p>
+                <!-- KPI 3 -->
+                <div class="card p-3 border-l-4 border-indigo-500 relative">
+                    <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Média dos Scores Finais dos projetos selecionados. Indica a "qualidade" matemática da seleção.</div></div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">Utilidade Média</p>
+                    <p class="text-xl font-bold text-slate-800 mt-1" id="resUtilidadeMedia">-</p>
+                    <p class="text-[10px] text-indigo-600 font-semibold">Score Médio</p>
                 </div>
-
-                <!-- KPI 4: ROI Social -->
-                <div class="card p-3 border-l-4 border-purple-500">
-                    <p class="text-[10px] text-gray-500 uppercase font-bold">ROI Social</p>
-                    <p class="text-xl font-bold text-gray-800" id="resRoi">-</p>
-                    <p class="text-[10px] text-gray-400">Votos por R$ 1,00</p>
+                <!-- KPI 4 -->
+                <div class="card p-3 border-l-4 border-purple-500 relative">
+                    <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Retorno sobre Investimento Social: Total de votos atendidos dividido pelo custo total investido.</div></div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">ROI Social</p>
+                    <p class="text-xl font-bold text-slate-800 mt-1" id="resRoi">-</p>
+                    <p class="text-[10px] text-purple-600 font-semibold">Votos / R$ 1,00</p>
                 </div>
-
-                <!-- KPI 5: Cobertura Votos -->
-                <div class="card p-3 border-l-4 border-teal-500">
-                    <p class="text-[10px] text-gray-500 uppercase font-bold">Votos Atendidos</p>
-                    <p class="text-lg font-bold text-gray-800 truncate" id="resVotosAtendidos">-</p>
-                    <p class="text-[10px] text-teal-600 font-semibold" id="resPctVotos">0% do Total</p>
+                <!-- KPI 5 -->
+                <div class="card p-3 border-l-4 border-teal-500 relative">
+                    <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Soma total dos votos (pessoas beneficiadas) dos projetos que foram selecionados.</div></div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">Votos Atendidos</p>
+                    <p class="text-lg font-bold text-slate-800 truncate mt-1" id="resVotosAtendidos">-</p>
+                    <p class="text-[10px] text-teal-600 font-semibold" id="resPctVotos">-</p>
                 </div>
-
-                <!-- KPI 6: Eficiência Média (NOVO) -->
-                <div class="card p-3 border-l-4 border-pink-500 relative group">
-                    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity tooltip-container">
-                        <i class="fa-solid fa-circle-info text-pink-300 text-xs cursor-help"></i>
-                        <span class="tooltip-text right-0 left-auto margin-0 bottom-full translate-x-0">Utilidade entregue por cada R$ 1.000 gastos (Média).</span>
-                    </div>
-                    <p class="text-[10px] text-gray-500 uppercase font-bold">Eficiência Média</p>
-                    <p class="text-xl font-bold text-gray-800" id="resEficMedia">-</p>
+                <!-- KPI 6 -->
+                <div class="card p-3 border-l-4 border-pink-500 relative">
+                    <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Eficiência média de custo: Quanto de Utilidade é gerada a cada R$ 1.000,00 investidos.</div></div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">Eficiência Média</p>
+                    <p class="text-xl font-bold text-slate-800 mt-1" id="resEficMedia">-</p>
                     <p class="text-[10px] text-pink-600 font-semibold">Util. / 1k R$</p>
                 </div>
             </div>
 
-            <!-- Linha Gráficos 1: Drivers e Conformidade -->
+            <!-- Gráficos Linha 1 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <!-- Regressão (Drivers de Prioridade) -->
+                <!-- Análise Econométrica -->
                 <div class="card p-4 h-80">
-                    <h3 class="font-bold text-gray-700 mb-2 flex justify-between text-sm items-center">
-                        <span class="flex items-center gap-2">
-                            <i class="fa-solid fa-magnifying-glass-chart text-slate-600"></i> Impacto na Utilidade Final (Betas)
-                            <div class="tooltip-container">
-                                <i class="fa-solid fa-circle-info text-gray-300 hover:text-slate-500 cursor-help text-xs"></i>
-                                <span class="tooltip-text">Mostra quais variáveis mais afetam o cálculo matemático da Utilidade Final.</span>
-                            </div>
-                        </span>
-                        <span class="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded" id="regressaoR2">R²: -</span>
-                    </h3>
-                    <div class="h-64">
-                        <canvas id="chartRegressao"></canvas>
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-magnifying-glass-chart text-slate-500"></i> Impacto e Significância
+                                <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-trigger"></i><div class="tooltip-content">Regressão Linear Múltipla. Mostra o impacto (Beta) de Custo, Votos, Peso Político e Restrição Legal no Score Final.</div></div>
+                            </h3>
+                            <p class="text-[10px] text-slate-400">Análise de sensibilidade do modelo.</p>
+                        </div>
+                        <div class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-600 font-mono" id="regressaoR2">R²: -</div>
                     </div>
+                    <div class="h-60 relative w-full"><canvas id="chartRegressao"></canvas></div>
                 </div>
-
-                <!-- Gráfico de Barras (Conformidade) -->
+                
+                <!-- Execução vs Mínimo -->
                 <div class="card p-4 h-80">
-                    <h3 class="font-bold text-gray-700 mb-2 flex justify-between text-sm items-center">
-                        <span class="flex items-center gap-2">
-                            <i class="fa-solid fa-chart-column text-blue-500"></i> Execução vs Mínimo Legal
-                        </span>
-                        <span id="chartCatTitle" class="text-xs font-normal text-gray-400">Visão Geral</span>
-                    </h3>
-                    <div class="h-64">
-                        <canvas id="chartCategorias"></canvas>
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-blue-500"></i> Execução vs Mínimo Legal
+                                <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-trigger"></i><div class="tooltip-content">Compara o valor total gasto em cada categoria (Barra Azul) com o mínimo exigido por lei (Barra Vermelha).</div></div>
+                            </h3>
+                            <p class="text-[10px] text-slate-400">Aderência às regras orçamentárias.</p>
+                        </div>
+                        <span id="chartCatTitle" class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded uppercase">Geral</span>
                     </div>
+                    <div class="h-60 relative w-full"><canvas id="chartCategorias"></canvas></div>
                 </div>
             </div>
 
-            <!-- Linha Gráficos 2: Fronteira e Densidade -->
+            <!-- Gráficos Linha 2 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <!-- Gráfico de Dispersão (Score vs Custo) -->
-                <div class="card p-4 h-72">
-                    <h3 class="font-bold text-gray-700 mb-2 flex justify-between text-sm items-center">
-                        <span class="flex items-center gap-2">
-                            <i class="fa-solid fa-braille text-green-500"></i> Fronteira de Eficiência
-                        </span>
-                        <div class="flex gap-2 text-[10px]">
-                            <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-gray-300"></div> Não Sel.</span>
-                            <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-green-500"></div> Sel.</span>
+                <!-- Fronteira de Eficiência (Com Não Resolvidos) -->
+                <div class="card p-4 h-80">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-braille text-green-500"></i> Fronteira de Eficiência
+                                <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-trigger"></i><div class="tooltip-content">Dispersão de Score vs Custo. Pontos cinzas são projetos rejeitados. Coloridos são aprovados.</div></div>
+                            </h3>
+                            <p class="text-[10px] text-slate-400">Comparação de Projetos Selecionados vs Não Selecionados.</p>
                         </div>
-                    </h3>
-                    <div class="h-56">
-                        <canvas id="chartScatter"></canvas>
+                        <div class="flex gap-2 text-[9px]">
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-slate-300"></div> Fora</span>
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-green-500"></div> Efic.</span>
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-purple-500"></div> Legal</span>
+                        </div>
                     </div>
+                    <div class="h-60 relative w-full"><canvas id="chartScatter"></canvas></div>
                 </div>
 
-                <!-- Densidade (Comparativo) -->
-                <div class="card p-4 h-72">
-                    <h3 class="font-bold text-gray-700 mb-2 flex justify-between text-sm items-center">
-                        <span class="flex items-center gap-2">
-                            <i class="fa-solid fa-wave-square text-indigo-500"></i> Distribuição de Prioridade
-                        </span>
-                        <span class="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Original vs Robusto</span>
-                    </h3>
-                    <div class="h-56">
-                        <canvas id="chartDensidade"></canvas>
+                <!-- Distribuição Estatística (Robusta vs Normal) -->
+                <div class="card p-4 h-80">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-wave-square text-indigo-500"></i> Distribuição de Prioridade
+                                <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-trigger"></i><div class="tooltip-content">Curva de densidade dos scores. A linha sólida (Robusta) usa ajuste adaptativo. A tracejada (Original) usa pesos brutos. Dados Estatísticos inclusos no cabeçalho.</div></div>
+                            </h3>
+                            <p class="text-[10px] text-slate-400">Comparativo: Modelo Original vs Robusto.</p>
+                        </div>
                     </div>
+                    <div class="h-60 relative w-full"><canvas id="chartDensidade"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Gráficos Pizza (Novos) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="card p-4 h-72">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i class="fa-solid fa-chart-pie text-orange-500"></i> Projetos Resolvidos por Tipo <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-trigger"></i><div class="tooltip-content">Quantidade absoluta de projetos aprovados em cada categoria.</div></div></h3>
+                    </div>
+                    <div class="h-52 relative w-full flex justify-center"><canvas id="chartPieProjetos"></canvas></div>
+                </div>
+                <div class="card p-4 h-72">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2"><i class="fa-solid fa-users text-cyan-500"></i> Pessoas Atendidas por Tipo <div class="tooltip-container"><i class="fa-solid fa-circle-info tooltip-trigger"></i><div class="tooltip-content">Soma total de votos (pessoas beneficiadas) dos projetos aprovados em cada categoria.</div></div></h3>
+                    </div>
+                    <div class="h-52 relative w-full flex justify-center"><canvas id="chartPieVotos"></canvas></div>
                 </div>
             </div>
 
             <!-- Tabela -->
-            <div class="card p-0 overflow-hidden border border-gray-200">
-                <div class="bg-gray-50 p-3 border-b border-gray-200 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-700 text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-list text-gray-500"></i> Ranking Score Final
+            <div class="card p-0 overflow-hidden border border-slate-200 mb-10">
+                <div class="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-list text-slate-500"></i> Ranking de Prioridade
+                        <button onclick="exportarTabela()" class="bg-green-600 hover:bg-green-700 text-white text-[10px] px-2 py-1 rounded ml-2 transition shadow-sm flex items-center gap-1">
+                            <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                        </button>
                     </h3>
-                    <span id="tableStatus" class="text-[10px] text-gray-500 bg-white border border-gray-300 px-2 py-1 rounded">Top 100</span>
+                    <span id="tableStatus" class="text-[10px] text-slate-500 bg-white border border-slate-300 px-2 py-1 rounded">Aguardando...</span>
                 </div>
-                <div class="overflow-x-auto max-h-80 custom-scrollbar">
-                    <table class="min-w-full text-xs text-left">
-                        <thead class="bg-gray-100 text-gray-600 font-bold uppercase sticky top-0 z-10 shadow-sm">
+                <div class="overflow-auto max-h-[600px] custom-scrollbar">
+                    <table class="min-w-full text-xs text-left border-collapse" id="mainTable">
+                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th class="px-4 py-2">Rank</th>
-                                <th class="px-4 py-2">ID</th>
-                                <th class="px-4 py-2">Categoria</th>
-                                <th class="px-4 py-2 text-right">Custo (R$)</th>
-                                <th class="px-4 py-2 text-right">Votos</th>
-                                <th class="px-4 py-2 text-right bg-blue-50">Score Final</th>
-                                <th class="px-4 py-2 text-center">Status</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b">Rank</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b">ID</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b">Categoria</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b text-right">Custo (R$)</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b text-right">Votos</th>
+                                <th class="px-4 py-3 bg-blue-50 border-b border-blue-100 text-right text-blue-700">Score</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b text-center">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="tabelaResultados" class="divide-y divide-gray-200 bg-white">
-                            <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400 italic">Aguardando execução...</td></tr>
+                        <tbody id="tabelaResultados" class="divide-y divide-slate-200 bg-white">
+                            <tr><td colspan="7" class="px-4 py-10 text-center text-slate-400 italic">Nenhum dado para exibir.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -371,583 +364,598 @@
 
     <script>
         // ==========================================
-        // MÓDULO MATEMÁTICO (Álgebra Linear)
+        // MÓDULO MATEMÁTICO & ESTATÍSTICO
         // ==========================================
         const Matrix = {
-            multiply: (a, b) => {
-                const m = a.length, n = a[0].length, p = b[0].length;
-                const result = new Array(m).fill(0).map(() => new Array(p).fill(0));
-                for (let i = 0; i < m; i++) {
-                    for (let j = 0; j < p; j++) {
-                        let sum = 0;
-                        for (let k = 0; k < n; k++) sum += a[i][k] * b[k][j];
-                        result[i][j] = sum;
-                    }
-                }
-                return result;
-            },
-            transpose: (a) => a[0].map((_, c) => a.map(r => r[c])),
-            inverse: (m) => {
-                const n = m.length;
-                const aug = m.map((row, i) => [...row, ...new Array(n).fill(0).map((_, j) => i === j ? 1 : 0)]);
-                for (let i = 0; i < n; i++) {
-                    let pivot = aug[i][i];
-                    if (pivot === 0) return null;
-                    for (let j = 0; j < 2 * n; j++) aug[i][j] /= pivot;
-                    for (let k = 0; k < n; k++) {
-                        if (k !== i) {
-                            const factor = aug[k][i];
-                            for (let j = 0; j < 2 * n; j++) aug[k][j] -= factor * aug[i][j];
-                        }
-                    }
-                }
-                return aug.map(row => row.slice(n));
-            }
+            multiply: (a, b) => { const m=a.length, n=a[0].length, p=b[0].length, r=Array(m).fill(0).map(()=>Array(p).fill(0)); for(let i=0;i<m;i++)for(let j=0;j<p;j++)for(let k=0;k<n;k++) r[i][j]+=a[i][k]*b[k][j]; return r; },
+            transpose: (a) => a[0].map((_,c)=>a.map(r=>r[c])),
+            inverse: (m) => { const n=m.length, aug=m.map((r,i)=>[...r,...Array(n).fill(0).map((_,j)=>i===j?1:0)]); for(let i=0;i<n;i++){ let p=aug[i][i]; if(Math.abs(p)<1e-10)return null; for(let j=0;j<2*n;j++)aug[i][j]/=p; for(let k=0;k<n;k++)if(k!==i){let f=aug[k][i];for(let j=0;j<2*n;j++)aug[k][j]-=f*aug[i][j];}} return aug.map(r=>r.slice(n)); },
+            multiplyScalar: (a, s) => a.map(row => row.map(val => val * s))
         };
+        function normalCDF(x) { var t=1/(1+.2316419*Math.abs(x)), d=.3989423*Math.exp(-x*x/2), p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x>0?1-p:p; }
+        function calculatePValue(t) { return 2*(1-normalCDF(Math.abs(t))); }
+        const getQuantile=(a,q)=>{const s=[...a].sort((x,y)=>x-y), p=(s.length-1)q, b=Math.floor(p), r=p-b; return s[b+1]!==undefined?s[b]+r(s[b+1]-s[b]):s[b];};
+        const getMean=(a)=>a.reduce((x,y)=>x+y,0)/(a.length||1);
+        const getSD=(a)=>{const m=getMean(a); return Math.sqrt(a.reduce((s,n)=>s+(n-m)**2,0)/(a.length-1||1));};
+        function normalizeString(s) { return s?s.toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim():""; }
 
         // ==========================================
-        // CONFIGURAÇÃO INICIAL
+        // ESTADO GLOBAL
         // ==========================================
-        const CONFIG_CATEGORIAS_PADRAO = [
-            { id: "EDU", nome: "Educação", min: 25, peso: 10 },
-            { id: "SAU", nome: "Saúde", min: 15, peso: 7 },
-            { id: "SEG", nome: "Segurança", min: 5, peso: 6 },
-            { id: "INF", nome: "Infraestrutura", min: 10, peso: 5 },
-            { id: "AMB", nome: "Meio Ambiente", min: 5, peso: 5 },
-            { id: "CUL", nome: "Cultura", min: 5, peso: 4 }
-        ];
-
-        const MAPA_SINONIMOS = {
-            "EDUCACAO": "EDU", "ENSINO": "EDU", "ESCOLA": "EDU", "ESCOLAS": "EDU",
-            "SAUDE": "SAU", "HOSPITAL": "SAU", "SANITARIO": "SAU", "UBS": "SAU",
-            "SEGURANCA": "SEG", "POLICIA": "SEG", "VIGILANCIA": "SEG",
-            "INFRAESTRUTURA": "INF", "INFRA": "INF", "OBRAS": "INF", "PAVIMENTACAO": "INF", "ASFALTO": "INF",
-            "MEIO AMBIENTE": "AMB", "AMBIENTE": "AMB", "VERDE": "AMB", "SUSTENTABILIDADE": "AMB",
-            "CULTURA": "CUL", "LAZER": "CUL", "ARTE": "CUL", "ESPORTE": "CUL"
-        };
-
-        let dadosBrutos = []; 
-        let resultadosUltimaSimulacao = []; 
-        let gastosPorCategoriaGlobal = {}; 
-        let orcamentoTotalGlobal = 0; 
-        let configuracaoCategorias = JSON.parse(JSON.stringify(CONFIG_CATEGORIAS_PADRAO));
-        
+        let dadosBrutos = [];
+        let resultadosUltimaSimulacao = [];
+        let gastosPorCategoriaGlobal = {};
+        let orcamentoTotalGlobal = 0;
+        let configuracaoCategorias = [];
         let filtroCategoriaAtivo = 'TODOS';
-        let chartCategoriasInstance = null;
-        let chartScatterInstance = null;
-        let chartDensidadeInstance = null;
-        let chartRegressaoInstance = null;
+        
+        const CONFIG_PADRAO = [
+            {id:"EDU", nome:"Educação", min:25, peso:10}, {id:"SAU", nome:"Saúde", min:15, peso:7},
+            {id:"SEG", nome:"Segurança", min:5, peso:6}, {id:"INF", nome:"Infraestrutura", min:10, peso:5},
+            {id:"AMB", nome:"Meio Ambiente", min:5, peso:5}, {id:"CUL", nome:"Cultura", min:5, peso:4}
+        ];
+        let configuracaoCategoriasIniciais = JSON.parse(JSON.stringify(CONFIG_PADRAO));
+        const MAPA_SINONIMOS = {"EDUCACAO":"EDU", "ENSINO":"EDU", "SAUDE":"SAU", "HOSPITAL":"SAU", "SEGURANCA":"SEG", "POLICIA":"SEG", "INFRAESTRUTURA":"INF", "OBRAS":"INF", "ASFALTO":"INF", "AMBIENTE":"AMB", "VERDE":"AMB", "CULTURA":"CUL", "LAZER":"CUL"};
 
-        // === ESTATÍSTICA ===
-        const getQuantile = (arr, q) => {
-            const sorted = [...arr].sort((a, b) => a - b);
-            const pos = (sorted.length - 1) * q;
-            const base = Math.floor(pos);
-            const rest = pos - base;
-            return sorted[base + 1] !== undefined ? sorted[base] + rest * (sorted[base + 1] - sorted[base]) : sorted[base];
-        };
-        const getMean = (arr) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
-        const getSD = (arr) => {
-            const mean = getMean(arr);
-            return Math.sqrt(arr.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / (arr.length - 1 || 1));
-        };
-        function normalizeString(str) {
-            if (!str) return "";
-            return str.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-        }
+        let chartCategorias=null, chartScatter=null, chartDensidade=null, chartRegressao=null, chartPieProjetos=null, chartPieVotos=null;
 
         // ==========================================
-        // 1. UI
-        // ==========================================
-        function initUI() {
-            const container = document.getElementById('categoryConfig');
-            container.innerHTML = '';
-            
-            configuracaoCategorias.forEach((cat, index) => {
-                const row = document.createElement('div');
-                row.className = "grid grid-cols-12 gap-2 items-center py-1 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition";
-                row.innerHTML = `
-                    <div class="col-span-4 pl-2">
-                        <div class="text-xs font-bold text-gray-700 truncate" title="${cat.nome}">${cat.nome}</div>
-                        <div class="text-[9px] text-gray-400 font-mono">${cat.id}</div>
-                    </div>
-                    <div class="col-span-4">
-                        <div class="relative">
-                            <input type="number" onchange="atualizarConfigCat(${index}, 'min', this.value)" value="${cat.min}" 
-                                class="w-full border border-gray-300 focus:border-red-500 rounded px-1 py-1 text-center font-bold text-red-700 outline-none text-xs">
-                            <span class="absolute right-1 top-1 text-[9px] text-gray-400 pointer-events-none">%</span>
-                        </div>
-                    </div>
-                    <div class="col-span-4">
-                         <div class="relative">
-                            <input type="number" onchange="atualizarConfigCat(${index}, 'peso', this.value)" value="${cat.peso}" max="10" min="0" 
-                                class="w-full border border-gray-300 focus:border-orange-500 rounded px-1 py-1 text-center font-bold text-orange-700 outline-none text-xs">
-                        </div>
-                    </div>
-                `;
-                container.appendChild(row);
-            });
-            atualizarMonitorRigidez();
-            validarAlphas();
-        }
-
-        function validarAlphas() {
-            const a1 = parseFloat(document.getElementById('alpha1').value) || 0;
-            const a2 = parseFloat(document.getElementById('alpha2').value) || 0;
-            const a3 = parseFloat(document.getElementById('alpha3').value) || 0;
-            document.getElementById('valA1').innerText = a1.toFixed(2);
-            document.getElementById('valA2').innerText = a2.toFixed(2);
-            document.getElementById('valA3').innerText = a3.toFixed(2);
-            const soma = a1 + a2 + a3;
-            const statusEl = document.getElementById('alphaStatus');
-            const btn = document.getElementById('btnExecutar');
-            if (Math.abs(soma - 1.0) > 0.005) {
-                statusEl.className = "mt-2 text-[10px] font-bold p-1 rounded bg-red-100 text-red-600";
-                statusEl.innerHTML = ⚠ SOMA: ${soma.toFixed(2)} (Meta: 1.0);
-                btn.disabled = true;
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                statusEl.className = "mt-2 text-[10px] font-bold p-1 rounded bg-green-100 text-green-600";
-                statusEl.innerHTML = "✓ CONFIGURAÇÃO VÁLIDA";
-                btn.disabled = false;
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-        }
-
-        function atualizarConfigCat(index, campo, valor) {
-            configuracaoCategorias[index][campo] = parseFloat(valor);
-            atualizarMonitorRigidez();
-        }
-
-        function atualizarMonitorRigidez() {
-            const soma = configuracaoCategorias.reduce((acc, cat) => acc + cat.min, 0);
-            const el = document.getElementById('rigidezAlert');
-            if (soma <= 60) {
-                el.className = "mt-3 text-[10px] font-bold p-2 rounded bg-green-100 text-green-800 border border-green-200";
-                el.innerHTML = "🟢 RIGIDEZ: ${soma.toFixed(1)}% (Flexível)";
-            } else if (soma <= 90) {
-                el.className = "mt-3 text-[10px] font-bold p-2 rounded bg-yellow-100 text-yellow-800 border border-yellow-200";
-                el.innerHTML = 🟡 RIGIDEZ: ${soma.toFixed(1)}% (Moderada);
-            } else {
-                el.className = "mt-3 text-[10px] font-bold p-2 rounded bg-red-100 text-red-800 border border-red-200";
-                el.innerHTML = 🔴 RIGIDEZ: ${soma.toFixed(1)}% (Crítica);
-            }
-        }
-
-        // ==========================================
-        // 2. IMPORTAÇÃO
+        // 1. CARREGAMENTO E DETECÇÃO (Robustez Melhorada)
         // ==========================================
         function parseLocalNumber(val) {
-            if (!val) return 0;
+            if (val === null || val === undefined || val === '') return 0;
             if (typeof val === 'number') return val;
-            let str = String(val).trim().replace(/[Rr]\$\s?/g, '');
+            let str = String(val).trim().replace(/[Rr]\$\s?/g, '').replace(/[^0-9,.-]/g, ''); 
             if ((str.indexOf(',') > -1 && str.indexOf('.') > -1 && str.lastIndexOf(',') > str.lastIndexOf('.')) || (str.indexOf(',') > -1 && str.indexOf('.') === -1)) {
                 str = str.replace(/\./g, '').replace(',', '.');
             }
             return parseFloat(str) || 0;
         }
 
-        function gerarDadosFicticios() {
-            const n_projetos = 1000;
-            const categoriasPossiveis = configuracaoCategorias.map(c => c.id);
-            const dados = [];
-            for (let i = 1; i <= n_projetos; i++) {
-                let C_i = Math.round(Math.exp(Math.random() * 2.5 + 7));
-                if (C_i < 300) C_i = 300;
-                let V_i = Math.round(Math.pow(Math.random(), 3) * 5000) + 20;
-                if (V_i < 20) V_i = 20;
-                dados.push({
-                    id: i, id_cat_raw: categoriasPossiveis[Math.floor(Math.random() * categoriasPossiveis.length)],
-                    id_cat: "", C_i: C_i, V_i: V_i
-                });
+        function processDataArray(jsonArray) {
+            if (!jsonArray || jsonArray.length === 0) { alert("Arquivo vazio!"); return; }
+            
+            const keys = Object.keys(jsonArray[0]);
+            const findKey = (candidates) => keys.find(k => candidates.some(c => normalizeString(k).includes(c)));
+            
+            const keyId = findKey(['ID', 'CODIGO', 'IDENTIFICADOR']);
+            const keyCat = findKey(['TIPO', 'CATEGORIA', 'SETOR', 'PROBLEMA']);
+            const keyCusto = findKey(['CUSTO', 'VALOR', 'PRECO', 'ORCAMENTO']);
+            const keyVotos = findKey(['VOTOS', 'APOIO', 'LIKES']);
+            
+            document.getElementById('colunasDetectadas').innerText = Detectado: ${keyCat||'?'} | ${keyCusto||'?'} | ${keyVotos||'?'};
+
+            if (!keyCat || !keyCusto || !keyVotos) {
+                alert("ERRO: Colunas obrigatórias não encontradas. Verifique o arquivo.");
+                return;
             }
-            dados.forEach(d => d.id_cat = d.id_cat_raw);
-            dadosBrutos = dados;
-            document.getElementById('dataStatus').innerHTML = <span class="text-green-600 font-bold"><i class="fa-solid fa-check"></i> Base gerada: ${n_projetos} itens</span>;
-        }
-
-        document.getElementById('csvFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            Papa.parse(file, {
-                header: true, dynamicTyping: false, skipEmptyLines: true,
-                complete: function(results) {
-                    if (results.data && results.data.length > 0) {
-                        const keys = Object.keys(results.data[0]);
-                        const findKey = (candidates) => keys.find(k => candidates.some(c => normalizeString(k).includes(c)));
-                        const keyId = findKey(['ID', 'CODIGO']);
-                        const keyCat = findKey(['TIPO', 'CATEGORIA', 'SETOR']);
-                        const keyCusto = findKey(['CUSTO', 'VALOR']);
-                        const keyVotos = findKey(['VOTOS', 'APOIO']);
-                        if (!keyCat || !keyCusto || !keyVotos) {
-                            alert("Erro: Colunas obrigatórias não encontradas (ID, CUSTO, TIPO_PROBLEMA, VOTOS).");
-                            return;
-                        }
-                        dadosBrutos = results.data.map((row, index) => ({
-                            id: keyId ? row[keyId] : (index + 1),
-                            id_cat_raw: row[keyCat] ? String(row[keyCat]) : "OUTROS", id_cat: "",
-                            C_i: parseLocalNumber(row[keyCusto]), V_i: parseLocalNumber(row[keyVotos])
-                        })).filter(r => r.C_i > 0); 
-                        document.getElementById('dataStatus').innerHTML = <span class="text-green-600 font-bold"><i class="fa-solid fa-check"></i> Importado: ${dadosBrutos.length} linhas</span>;
-                    }
-                }
-            });
-        });
-
-        // ==========================================
-        // 3. REGRESSÃO LINEAR MÚLTIPLA (OLS)
-        // ==========================================
-        function calcularRegressao(dados, statsCat) {
-            if (!dados || dados.length < 10) return null;
-
-            // Variáveis Explicativas: Log(Custo), Log(Votos), Log(Peso) -- SEM EQUIDADE
-            const logsCost = dados.map(d => Math.log(d.C_i + 1));
-            const logsVotos = dados.map(d => Math.log(d.V_i + 1));
-            const logsPeso = dados.map(d => {
-                const cat = configuracaoCategorias.find(c => c.id === d.id_cat);
-                return Math.log((cat ? cat.peso : 1) + 1);
-            });
-
-            // Y: U_final (Utilidade)
-            const utils = dados.map(d => d.U_final);
-
-            const calcZ = (arr) => {
-                const mu = getMean(arr);
-                const sigma = getSD(arr) || 1;
-                return arr.map(v => (v - mu) / sigma);
-            };
-
-            const zCost = calcZ(logsCost);
-            const zVotos = calcZ(logsVotos);
-            const zPeso = calcZ(logsPeso);
-            const zUtil = calcZ(utils);
-
-            // Matriz X = [1, cost, votos, peso]
-            const X = zUtil.map((_, i) => [1, zCost[i], zVotos[i], zPeso[i]]);
-            const Y = zUtil.map(s => [s]);
-
-            try {
-                const Xt = Matrix.transpose(X);
-                const XtX = Matrix.multiply(Xt, X);
-                const invXtX = Matrix.inverse(XtX);
-                if (!invXtX) return null;
+            
+            // Processamento Agressivo: Ler tudo, limpar erros
+            dadosBrutos = jsonArray.map((row, idx) => {
+                const catRaw = row[keyCat] ? String(row[keyCat]).trim() : "OUTROS";
+                const custo = parseLocalNumber(row[keyCusto]);
+                const votos = parseLocalNumber(row[keyVotos]);
                 
-                const XtY = Matrix.multiply(Xt, Y);
-                const Beta = Matrix.multiply(invXtX, XtY);
-
-                const yMean = getMean(zUtil);
-                const ssTot = zUtil.reduce((a, b) => a + Math.pow(b - yMean, 2), 0);
-                const predicted = X.map(row => row.reduce((sum, val, idx) => sum + val * Beta[idx][0], 0));
-                const ssRes = zUtil.reduce((a, b, i) => a + Math.pow(b - predicted[i], 2), 0);
-                const r2 = 1 - (ssRes / ssTot);
+                // Ignora linhas com custo 0 ou inválido
+                if (custo <= 0 || isNaN(custo)) return null;
 
                 return {
-                    betas: {
-                        custo: Beta[1][0],
-                        votos: Beta[2][0],
-                        peso: Beta[3][0]
-                    },
-                    r2: r2
+                    id: keyId ? row[keyId] : (idx + 1),
+                    id_cat_raw: catRaw,
+                    id_cat: "", // Será mapeado
+                    C_i: custo,
+                    V_i: votos || 0 // Votos 0 são permitidos
                 };
-            } catch (e) {
-                console.error("Erro na regressão", e);
-                return null;
-            }
+            }).filter(d => d !== null);
+            
+            document.getElementById('dataStatus').innerHTML = <span class="text-green-600 font-bold">✓ ${dadosBrutos.length} registros carregados</span>;
+            document.getElementById('headerTotalRows').innerText = dadosBrutos.length;
+
+            detectarEAtualizarCategorias();
         }
 
-        // ==========================================
-        // 4. MOTOR DE CÁLCULO (SIMULAÇÃO)
-        // ==========================================
-        function executarSimulacao() {
-            if (dadosBrutos.length === 0) { alert("Carregue dados primeiro!"); return; }
+        function detectarEAtualizarCategorias() {
+            const catsUnicas = [...new Set(dadosBrutos.map(d => d.id_cat_raw))].sort();
+            configuracaoCategorias = []; 
 
+            catsUnicas.forEach((catName, idx) => {
+                let baseId = normalizeString(catName).substring(0, 3).toUpperCase();
+                if(baseId.length < 3) baseId = (baseId + "XXX").substring(0,3);
+                let finalId = baseId;
+                let count = 1;
+                while(configuracaoCategorias.some(c => c.id === finalId)) {
+                    finalId = baseId.substring(0,2) + count;
+                    count++;
+                }
+                configuracaoCategorias.push({ id: finalId, nome: catName, min: 0, peso: 5 });
+            });
+
+            dadosBrutos.forEach(d => {
+                const match = configuracaoCategorias.find(c => c.nome === d.id_cat_raw);
+                d.id_cat = match ? match.id : configuracaoCategorias[0].id;
+            });
+
+            initUI();
+        }
+
+        // --- UI ---
+        function initUI() {
+            const container = document.getElementById('categoryConfig');
+            container.innerHTML = '';
+            document.getElementById('catCountBadge').innerText = configuracaoCategorias.length;
+
+            configuracaoCategorias.forEach((cat, index) => {
+                const row = document.createElement('div');
+                row.className = "grid grid-cols-12 gap-1 items-center py-1 border-b hover:bg-slate-50 text-xs";
+                row.innerHTML = `
+                    <div class="col-span-6 pl-2 font-medium truncate text-slate-700" title="${cat.nome}">${cat.nome}</div>
+                    <div class="col-span-3 px-1"><input type="number" value="${cat.min}" min="0" max="100" onchange="updCat(${index},'min',this.value)" class="w-full border border-slate-300 rounded text-center text-red-700 focus:border-blue-500 outline-none"></div>
+                    <div class="col-span-3 px-1"><input type="number" value="${cat.peso}" min="0" max="10" onchange="updCat(${index},'peso',this.value)" class="w-full border border-slate-300 rounded text-center text-orange-700 focus:border-blue-500 outline-none"></div>
+                `;
+                container.appendChild(row);
+            });
+            validarAlphas();
+            atualizarMonitorRigidez();
+        }
+
+        function updCat(i, f, v) { configuracaoCategorias[i][f] = parseFloat(v)||0; if(f==='min') atualizarMonitorRigidez(); }
+        function validarAlphas() {
+            const a1=parseFloat(document.getElementById('alpha1').value), a2=parseFloat(document.getElementById('alpha2').value), a3=parseFloat(document.getElementById('alpha3').value);
+            document.getElementById('valA1').innerText=a1.toFixed(2); document.getElementById('valA2').innerText=a2.toFixed(2); document.getElementById('valA3').innerText=a3.toFixed(2);
+            const s=a1+a2+a3;
+            const el = document.getElementById('alphaStatus');
+            const btn = document.getElementById('btnExecutar');
+            if(Math.abs(s-1)>0.01) {
+                el.innerHTML = <span class='text-red-600'>Total: ${s.toFixed(2)} (Ajuste para 1.0)</span>;
+                btn.disabled = true; btn.classList.add('opacity-50');
+            } else {
+                el.innerHTML = <span class='text-green-600'>Configuração OK</span>;
+                btn.disabled = false; btn.classList.remove('opacity-50');
+            }
+        }
+        
+        function atualizarMonitorRigidez() {
+            const soma = configuracaoCategorias.reduce((a,c)=>a+c.min,0);
+            const el = document.getElementById('rigidezAlert');
+            
+            let cor = 'bg-green-50 text-green-800 border-green-200';
+            let msg = 'FLEXÍVEL';
+            
+            if(soma > 100) { cor = 'bg-slate-800 text-white border-slate-900'; msg = 'ERRO (>100%)'; }
+            else if(soma > 90) { cor = 'bg-red-100 text-red-800 border-red-200'; msg = 'CRÍTICO (RÍGIDO)'; }
+            else if(soma > 60) { cor = 'bg-yellow-100 text-yellow-800 border-yellow-200'; msg = 'MODERADO'; }
+            
+            el.innerHTML = Soma Mínimos: <b>${soma.toFixed(1)}%</b> - ${msg};
+            el.className = mt-2 text-[10px] font-bold p-2 rounded text-center border ${cor};
+        }
+
+        // --- SIMULAÇÃO ---
+        function executarSimulacao() {
+            if(dadosBrutos.length === 0) { alert("Carregue dados primeiro!"); return; }
             const B = parseFloat(document.getElementById('orcamentoB').value);
             orcamentoTotalGlobal = B;
-            const alpha1 = parseFloat(document.getElementById('alpha1').value);
-            const alpha2 = parseFloat(document.getElementById('alpha2').value);
-            const alpha3 = parseFloat(document.getElementById('alpha3').value);
 
-            const statsCat = {};
-            configuracaoCategorias.forEach(cat => { statsCat[cat.id] = { N_k: 0, V_total_k: 0, config: cat }; });
+            const a1 = parseFloat(document.getElementById('alpha1').value);
+            const a2 = parseFloat(document.getElementById('alpha2').value);
+            const a3 = parseFloat(document.getElementById('alpha3').value);
 
-            dadosBrutos.forEach(item => {
-                const catRaw = normalizeString(item.id_cat_raw);
-                let catMatch = configuracaoCategorias.find(c => c.id === catRaw) || configuracaoCategorias.find(c => normalizeString(c.nome) === catRaw) || configuracaoCategorias.find(c => c.id === MAPA_SINONIMOS[catRaw]);
-                if (!catMatch) catMatch = configuracaoCategorias.find(c => catRaw.includes(c.id) || normalizeString(c.nome).includes(catRaw));
-                if (catMatch) item.id_cat = catMatch.id;
-                else {
-                    const novoId = catRaw.substring(0, 3);
-                    if (!statsCat[novoId] && !configuracaoCategorias.find(c=>c.id===novoId)) {
-                        const novaConfig = { id: novoId, nome: item.id_cat_raw, min: 0, peso: 1 };
-                        configuracaoCategorias.push(novaConfig);
-                        statsCat[novoId] = { N_k: 0, V_total_k: 0, config: novaConfig };
-                    }
-                    item.id_cat = novoId;
-                }
-                if (!statsCat[item.id_cat]) statsCat[item.id_cat] = { N_k: 0, V_total_k: 0, config: configuracaoCategorias.find(c => c.id === item.id_cat) };
-                statsCat[item.id_cat].N_k++;
-                statsCat[item.id_cat].V_total_k += item.V_i;
-            });
-            initUI();
-
+            // Normalização Robusta
             const custos = dadosBrutos.map(d => d.C_i);
             const votos = dadosBrutos.map(d => d.V_i);
-            const limCustoInf = getQuantile(custos, 0.10), limCustoSup = getQuantile(custos, 0.90);
-            const limVotoInf = getQuantile(votos, 0.10), limVotoSup = getQuantile(votos, 0.90);
-            const dadosFiltrados = dadosBrutos.filter(d => d.C_i >= limCustoInf && d.C_i <= limCustoSup && d.V_i >= limVotoInf && d.V_i <= limVotoSup);
+            const minLogC = Math.log(Math.max(1, Math.min(...custos)));
+            const maxLogC = Math.log(Math.max(1, Math.max(...custos)));
+            const maxLogV = Math.log(Math.max(1, Math.max(...votos)));
 
-            const votosPorCategoria = {};
-            configuracaoCategorias.forEach(c => votosPorCategoria[c.id] = []);
-            dadosFiltrados.forEach(d => { if(votosPorCategoria[d.id_cat]) votosPorCategoria[d.id_cat].push(d.V_i); });
-            Object.keys(votosPorCategoria).forEach(k => votosPorCategoria[k].sort((a,b) => a - b));
+            const statsCat = {};
+            configuracaoCategorias.forEach(c => statsCat[c.id] = {N:0, config:c});
+            dadosBrutos.forEach(d => { if(statsCat[d.id_cat]) statsCat[d.id_cat].N++; });
 
-            const custosLog = dadosFiltrados.map(d => Math.log(d.C_i + Math.E));
-            const minCustoLog = Math.min(...custosLog), maxCustoLog = Math.max(...custosLog);
+            const pool = dadosBrutos.map(d => {
+                const cat = statsCat[d.id_cat];
+                const normV = Math.log(d.V_i+1) / (maxLogV+1);
+                const normC = 1 - ((Math.log(d.C_i+1) - minLogC) / (maxLogC - minLogC || 1));
+                const normE = 1 / Math.sqrt(cat.N || 1);
 
-            const comps = dadosFiltrados.map(item => {
-                const stat = statsCat[item.id_cat];
-                const votosCat = votosPorCategoria[item.id_cat];
-                const rankPct = votosCat.length > 1 ? votosCat.indexOf(item.V_i) / (votosCat.length - 1) : 0;
-                const cNorm = (Math.log(item.C_i + Math.E) - minCustoLog) / (maxCustoLog - minCustoLog || 1);
-                return { compVotos: rankPct, compEficiencia: 1 - cNorm, compEquidade: 1 / Math.sqrt(stat.N_k || 1) };
+                // Score Robusto
+                const uBase = (a1*normV) + (a2*normC) + (a3*normE);
+                const pol = 1 + 0.15 * Math.log(cat.config.peso + 1);
+                const uFinal = uBase * Math.min(pol, 1.3);
+                const score = uFinal / Math.log(d.C_i + Math.E);
+
+                // Score Original (Estimado para comparação)
+                const uBaseOrig = (a1*normV) + (a2*normC) + (a3*normE); // Simplificado
+                const scoreOrig = uBaseOrig / Math.log(d.C_i + Math.E);
+                
+                return { ...d, Score: score, ScoreOriginal: scoreOrig, U_final: uFinal, selecionado: false, motivo: "SCORE BAIXO" };
             });
 
-            const cvVotos = getSD(comps.map(c=>c.compVotos))/getMean(comps.map(c=>c.compVotos));
-            const cvEfic = getSD(comps.map(c=>c.compEficiencia))/getMean(comps.map(c=>c.compEficiencia));
-            const cvEqui = getSD(comps.map(c=>c.compEquidade))/getMean(comps.map(c=>c.compEquidade));
+            pool.sort((a,b) => b.Score - a.Score);
 
-            const sum_adj = (alpha1/(1+cvVotos)) + (alpha2/(1+cvEfic)) + (alpha3/(1+cvEqui));
-            const A1 = (alpha1/(1+cvVotos))/sum_adj, A2 = (alpha2/(1+cvEfic))/sum_adj, A3 = (alpha3/(1+cvEqui))/sum_adj;
+            let gasto = 0;
+            const gastoCat = {};
+            configuracaoCategorias.forEach(c => gastoCat[c.id] = 0);
 
-            document.getElementById('infoAdaptativo').classList.remove('hidden');
-            document.getElementById('infoAdaptativo').innerHTML = <b>Adaptação Robusta:</b> α1:${alpha1}→<b>${A1.toFixed(2)}</b>, α2:${alpha2}→<b>${A2.toFixed(2)}</b>, α3:${alpha3}→<b>${A3.toFixed(2)}</b>;
-
-            const pool = dadosFiltrados.map((item, idx) => {
-                const c = comps[idx];
-                const catConfig = statsCat[item.id_cat].config;
-                const U_base_rob = (A1 * c.compVotos) + (A2 * c.compEficiencia) + (A3 * c.compEquidade);
-                const U_base_orig = (alpha1 * c.compVotos) + (alpha2 * c.compEficiencia) + (alpha3 * c.compEquidade);
-                const factor = Math.min(1 + 0.15 * Math.log(1 + catConfig.peso), 1.3);
-                const Score = (U_base_rob * factor) / Math.log(item.C_i + Math.E + 10);
-                const ScoreOriginal = (U_base_orig * factor) / Math.log(item.C_i + Math.E + 10);
-                return { ...item, Score, ScoreOriginal, U_final: U_base_rob * factor, selecionado: false, motivo: null };
-            });
-
-            pool.sort((a, b) => b.Score - a.Score);
-
-            let gasto_total = 0;
-            const gasto_cat = {};
-            configuracaoCategorias.forEach(c => gasto_cat[c.id] = 0);
-
-            configuracaoCategorias.forEach(cat => {
-                const meta = B * (cat.min / 100);
-                if (meta > 0) {
-                    const projCat = pool.filter(p => p.id_cat === cat.id);
-                    for (let p of projCat) {
-                        if (gasto_cat[cat.id] >= meta) break;
-                        if (!p.selecionado && (gasto_total + p.C_i <= B)) {
+            // Legal
+            configuracaoCategorias.forEach(c => {
+                const meta = B * (c.min/100);
+                if(meta > 0) {
+                    const subset = pool.filter(p => p.id_cat === c.id);
+                    for(let p of subset) {
+                        if(gastoCat[c.id] < meta && (gasto + p.C_i) <= B) {
                             p.selecionado = true; p.motivo = "CONFORMIDADE LEGAL";
-                            gasto_total += p.C_i; gasto_cat[cat.id] += p.C_i;
+                            gasto += p.C_i; gastoCat[c.id] += p.C_i;
                         }
                     }
                 }
             });
 
-            for (let p of pool) {
-                if (!p.selecionado && (gasto_total + p.C_i <= B)) {
+            // Eficiência
+            for(let p of pool) {
+                if(!p.selecionado && (gasto + p.C_i) <= B) {
                     p.selecionado = true; p.motivo = "EFICIÊNCIA";
-                    gasto_total += p.C_i; if (!gasto_cat[p.id_cat]) gasto_cat[p.id_cat] = 0; gasto_cat[p.id_cat] += p.C_i;
+                    gasto += p.C_i; 
+                    if(gastoCat[p.id_cat] !== undefined) gastoCat[p.id_cat] += p.C_i;
                 }
             }
 
             resultadosUltimaSimulacao = pool;
-            gastosPorCategoriaGlobal = gasto_cat;
+            gastosPorCategoriaGlobal = gastoCat;
 
-            // === CALCULAR REGRESSÃO SEM EQUIDADE ===
-            const regResult = calcularRegressao(pool, statsCat);
-            
+            initUI();
             gerarBotoesFiltro();
-            filtrarResultados('TODOS', regResult);
+            filtrarResultados('TODOS');
         }
 
-        // ==========================================
-        // 5. RENDERIZAÇÃO E KPIS
-        // ==========================================
+        // --- VISUALIZAÇÃO ---
         function gerarBotoesFiltro() {
-            const container = document.getElementById('filterBar');
-            container.style.display = 'flex';
-            container.innerHTML = <span class="text-xs font-bold text-gray-400 uppercase mr-2"><i class="fa-solid fa-filter"></i> Filtrar:</span>;
-            const addBtn = (id, text, active) => {
-                const btn = document.createElement('button');
-                btn.className = filter-btn ${active ? 'filter-btn-active' : 'filter-btn-inactive'};
-                btn.innerText = text;
-                btn.onclick = () => {
-                    document.querySelectorAll('.filter-btn').forEach(b => b.className = 'filter-btn filter-btn-inactive');
-                    btn.className = 'filter-btn filter-btn-active';
-                    filtrarResultados(id);
-                };
-                container.appendChild(btn);
+            const div = document.getElementById('filterBar');
+            div.innerHTML = '<span class="text-xs font-bold text-slate-400 mr-2 flex items-center"><i class="fa-solid fa-filter mr-1"></i> VISÃO:</span>';
+            const addBtn = (id, lbl) => {
+                const b = document.createElement('button');
+                b.className = filter-btn ${filtroCategoriaAtivo===id ? 'filter-btn-active':'filter-btn-inactive'} mr-1 mb-1;
+                b.innerText = lbl;
+                b.onclick = () => { filtroCategoriaAtivo=id; gerarBotoesFiltro(); filtrarResultados(id); };
+                div.appendChild(b);
             };
-            addBtn('TODOS', 'TODOS', true);
-            configuracaoCategorias.forEach(c => { if (resultadosUltimaSimulacao.some(r => r.id_cat === c.id)) addBtn(c.id, c.id, false); });
+            addBtn('TODOS', 'Geral');
+            configuracaoCategorias.forEach(c => {
+                if(resultadosUltimaSimulacao.some(r => r.id_cat === c.id)) addBtn(c.id, c.nome);
+            });
+            div.style.display = 'flex';
         }
 
-        function filtrarResultados(catId, regResultGlobal) {
-            filtroCategoriaAtivo = catId;
-            const dados = catId === 'TODOS' ? resultadosUltimaSimulacao : resultadosUltimaSimulacao.filter(r => r.id_cat === catId);
-            document.getElementById('chartCatTitle').innerText = catId === 'TODOS' ? "Visão Geral" : catId;
+        function filtrarResultados(id) {
+            const dados = id === 'TODOS' ? resultadosUltimaSimulacao : resultadosUltimaSimulacao.filter(r => r.id_cat === id);
             
-            const regData = regResultGlobal; 
+            const reg = calcularRegressao(dados); // Interage com o filtro
 
             atualizarKPIs(dados);
-            atualizarTabela(dados);
-            atualizarGraficos(dados, regData);
+            renderTable(dados); 
+            renderCharts(dados, reg);
         }
 
-        function atualizarKPIs(dados) {
-            const sel = dados.filter(p => p.selecionado);
-            const totalProjetos = dados.length;
-            const numSel = sel.length;
-            const gasto = sel.reduce((a, b) => a + b.C_i, 0);
-            const votosAtendidos = sel.reduce((a, b) => a + b.V_i, 0);
-            const votosTotal = dados.reduce((a, b) => a + b.V_i, 0);
+        function atualizarKPIs(d) {
+            const sel = d.filter(p => p.selecionado);
+            const gasto = sel.reduce((a,b)=>a+b.C_i,0);
             
-            document.getElementById('resSelecionados').innerText = numSel;
-            document.getElementById('resTotalProjetos').innerText = totalProjetos;
-            document.getElementById('resPctProjetos').innerText = totalProjetos > 0 ? ${((numSel/totalProjetos)*100).toFixed(1)}% Aprovado : "0%";
+            document.getElementById('resSelecionados').innerText = sel.length;
+            document.getElementById('resTotalProjetos').innerText = d.length;
+            document.getElementById('resPctProjetos').innerText = d.length>0 ? ((sel.length/d.length)*100).toFixed(1)+'%' : '0%';
             
-            document.getElementById('resOrcamento').innerText = gasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const pctOrc = orcamentoTotalGlobal > 0 ? (gasto / orcamentoTotalGlobal) * 100 : 0;
-            document.getElementById('resEficienciaOrc').innerText = filtroCategoriaAtivo === 'TODOS' ? ${pctOrc.toFixed(1)}% do Total : "Filtrado";
+            document.getElementById('resOrcamento').innerText = gasto.toLocaleString('pt-BR',{style:'currency',currency:'BRL', maximumFractionDigits:0});
+            const orcContexto = filtroCategoriaAtivo==='TODOS' ? orcamentoTotalGlobal : ((configuracaoCategorias.find(c=>c.id===filtroCategoriaAtivo)||{}).min/100 * orcamentoTotalGlobal);
+            document.getElementById('resEficienciaOrc').innerText = filtroCategoriaAtivo==='TODOS' ? ((gasto/orcamentoTotalGlobal)*100).toFixed(1)+'% do Total' : 'Gasto Local';
 
-            const utilTotal = sel.reduce((a, b) => a + b.U_final, 0);
-            document.getElementById('resUtilidadeMedia').innerText = numSel > 0 ? (utilTotal/numSel).toFixed(4) : "0.0000";
+            const util = sel.length>0 ? sel.reduce((a,b)=>a+b.U_final,0)/sel.length : 0;
+            document.getElementById('resUtilidadeMedia').innerText = util.toFixed(3);
 
-            document.getElementById('resRoi').innerText = gasto > 0 ? (votosAtendidos/gasto).toFixed(2) : "0.00";
+            const v = sel.reduce((a,b)=>a+b.V_i,0);
+            document.getElementById('resVotosAtendidos').innerText = v.toLocaleString('pt-BR');
+            document.getElementById('resRoi').innerText = gasto>0 ? (v/gasto).toFixed(2) : "0.00";
             
-            document.getElementById('resVotosAtendidos').innerText = votosAtendidos.toLocaleString('pt-BR');
-            document.getElementById('resPctVotos').innerText = votosTotal > 0 ? ${((votosAtendidos/votosTotal)*100).toFixed(1)}% Cobertura : "0%";
-
-            // NOVO KPI: EFICIÊNCIA MÉDIA (Utilidade / Custo * 1000)
-            const eficMedia = numSel > 0 ? sel.reduce((a, b) => a + (b.U_final / b.C_i), 0) / numSel : 0;
-            document.getElementById('resEficMedia').innerText = (eficMedia * 1000).toFixed(4);
+            const efic = sel.length>0 ? (sel.reduce((a,b)=>a+(b.U_final/b.C_i),0)/sel.length)*1000 : 0;
+            document.getElementById('resEficMedia').innerText = efic.toFixed(3);
         }
 
-        function atualizarTabela(dados) {
+        function renderTable(dados) {
             const tbody = document.getElementById('tabelaResultados');
-            tbody.innerHTML = '';
-            const show = dados.slice(0, 100);
-            if (show.length === 0) { tbody.innerHTML = <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">Nenhum dado.</td></tr>; return; }
-            
-            show.forEach((p, idx) => {
-                const rankGlobal = resultadosUltimaSimulacao.indexOf(p) + 1;
-                const bgStatus = p.selecionado ? (p.motivo.includes('LEGAL') ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700') : 'bg-gray-100 text-gray-400';
+            const frag = document.createDocumentFragment();
+            const limit = 5000;
+            const view = dados.slice(0, limit);
+            document.getElementById('tableStatus').innerText = Mostrando ${view.length} de ${dados.length};
+            if(view.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center">Vazio</td></tr>'; return; }
+
+            view.forEach((p, i) => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 border-b border-gray-100 text-xs";
-                tr.innerHTML = <td class="px-4 py-2 text-gray-500">#${rankGlobal}</td><td class="px-4 py-2 font-mono">${p.id}</td><td class="px-4 py-2"><span class="bg-gray-100 px-2 py-1 rounded font-bold">${p.id_cat}</span></td><td class="px-4 py-2 text-right">R$ ${p.C_i.toLocaleString('pt-BR')}</td><td class="px-4 py-2 text-right">${p.V_i.toLocaleString('pt-BR')}</td><td class="px-4 py-2 text-right font-bold text-blue-600 bg-blue-50">${p.Score.toFixed(4)}</td><td class="px-4 py-2 text-center"><span class="px-2 py-1 rounded font-bold text-[10px] uppercase ${bgStatus}">${p.selecionado ? p.motivo.replace('CONFORMIDADE ', '') : 'NÃO SELEC.'}</span></td>;
-                tbody.appendChild(tr);
-            });
-            document.getElementById('tableStatus').innerText = Exibindo ${show.length} de ${dados.length};
-        }
-
-        function createDensityData(scores, bins=20) {
-            if (scores.length===0) return {labels:[],data:[]};
-            const min=Math.min(...scores), max=Math.max(...scores), step=(max-min)/bins;
-            const labels=[], data=new Array(bins).fill(0);
-            for(let i=0;i<bins;i++) labels.push((min+i*step).toFixed(3));
-            scores.forEach(s=>{ let idx=Math.floor((s-min)/step); if(idx>=bins) idx=bins-1; data[idx]++; });
-            return {labels,data};
-        }
-
-        function atualizarGraficos(dadosFiltrados, regData) {
-            const sel = dadosFiltrados.filter(p => p.selecionado);
-
-            // 1. REGRESSÃO - SEM EQUIDADE
-            if (regData && regData.betas) {
-                document.getElementById('regressaoR2').innerText = R²: ${(regData.r2 * 100).toFixed(1)}%;
-                const betas = regData.betas;
-                const labelsReg = ['Custo', 'Votos', 'Peso Político'];
-                const dataReg = [betas.custo, betas.votos, betas.peso];
+                tr.className = "border-b hover:bg-slate-50";
+                const catName = configuracaoCategorias.find(c=>c.id===p.id_cat)?.nome || p.id_cat;
+                const sel = p.selecionado;
+                const legal = p.motivo.includes('LEGAL');
                 
-                if(chartRegressaoInstance) chartRegressaoInstance.destroy();
-                chartRegressaoInstance = new Chart(document.getElementById('chartRegressao'), {
+                tr.innerHTML = `
+                    <td class="px-4 py-1.5 text-slate-500">#${resultadosUltimaSimulacao.indexOf(p)+1}</td>
+                    <td class="px-4 py-1.5 font-mono text-xs">${p.id}</td>
+                    <td class="px-4 py-1.5 truncate max-w-[120px]" title="${catName}">${catName}</td>
+                    <td class="px-4 py-1.5 text-right">R$ ${p.C_i.toLocaleString('pt-BR')}</td>
+                    <td class="px-4 py-1.5 text-right">${p.V_i.toLocaleString('pt-BR')}</td>
+                    <td class="px-4 py-1.5 text-right font-bold text-blue-600 bg-blue-50">${p.Score.toFixed(4)}</td>
+                    <td class="px-4 py-1.5 text-center">
+                        <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded ${sel ? (legal?'bg-purple-100 text-purple-700':'bg-green-100 text-green-700') : 'bg-slate-100 text-slate-400'}">
+                            ${sel ? (legal ? 'Legal' : 'Efic.') : 'Não Sel.'}
+                        </span>
+                    </td>
+                `;
+                frag.appendChild(tr);
+            });
+            tbody.innerHTML = '';
+            tbody.appendChild(frag);
+        }
+
+        function calcularRegressao(dados) {
+            if(!dados || dados.length < 10) return null;
+            const X = [], Y = [];
+            dados.forEach(d => {
+                const cat = configuracaoCategorias.find(c => c.id === d.id_cat);
+                const w = cat ? cat.peso : 1;
+                const minPct = cat ? cat.min : 0; // NOVA VARIÁVEL: Min % (Restrição Legislativa)
+                X.push([1, Math.log(d.C_i+1), Math.log(d.V_i+1), Math.log(w+1), Math.log(minPct+1)]);
+                Y.push([d.Score]);
+            });
+
+            try {
+                const Xt = Matrix.transpose(X);
+                const XtX = Matrix.multiply(Xt, X);
+                const inv = Matrix.inverse(XtX);
+                if(!inv) return null;
+                const XtY = Matrix.multiply(Xt, Y);
+                const Beta = Matrix.multiply(inv, XtY);
+                
+                const yMean = getMean(Y.map(y=>y[0]));
+                const ssTot = Y.reduce((a,b)=>a+Math.pow(b[0]-yMean,2),0);
+                const preds = X.map(r => r[0]*Beta[0][0] + r[1]*Beta[1][0] + r[2]*Beta[2][0] + r[3]*Beta[3][0] + r[4]*Beta[4][0]);
+                const ssRes = Y.reduce((a,b,i)=>a+Math.pow(b[0]-preds[i],2),0);
+                const r2 = 1 - (ssRes/ssTot);
+                
+                const n = Y.length;
+                const p = 5;
+                const varRes = ssRes / (n - p);
+                const stdErrs = inv.map((r,i) => Math.sqrt(r[i] * varRes));
+                const tStats = Beta.map((b,i) => b[0] / stdErrs[i]);
+                const pVals = tStats.map(t => calculatePValue(t));
+
+                return {
+                    betas: {custo: Beta[1][0], votos: Beta[2][0], peso: Beta[3][0], min: Beta[4][0]},
+                    pValues: {custo: pVals[1], votos: pVals[2], peso: pVals[3], min: pVals[4]},
+                    r2: r2
+                };
+            } catch(e) { return null; }
+        }
+
+        function renderCharts(dados, reg) {
+            // 1. Regressão
+            const ctxReg = document.getElementById('chartRegressao');
+            if(chartRegressao) chartRegressao.destroy();
+            if(reg && reg.betas) {
+                document.getElementById('regressaoR2').innerText = R²: ${(reg.r2*100).toFixed(1)}%;
+                chartRegressao = new Chart(ctxReg, {
                     type: 'bar',
                     data: {
-                        labels: labelsReg,
+                        labels: ['Custo', 'Votos', 'Peso Político', 'Restrição Legal'],
                         datasets: [{
-                            label: 'Impacto Padronizado (Beta)',
-                            data: dataReg,
-                            backgroundColor: dataReg.map(v => v > 0 ? '#22c55e' : '#ef4444'),
-                            borderRadius: 4
+                            label: 'Impacto Padronizado',
+                            data: [reg.betas.custo, reg.betas.votos, reg.betas.peso, reg.betas.min],
+                            backgroundColor: d => d.raw > 0 ? '#22c55e' : '#ef4444'
                         }]
                     },
-                    options: {
-                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { x: { grid: { color: '#f3f4f6' } } }
+                    options: { 
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
+                        plugins: { 
+                            legend: {display:false},
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const key = ['custo','votos','peso','min'][ctx.dataIndex];
+                                        const beta = ctx.raw.toFixed(3);
+                                        const pval = reg.pValues[key].toFixed(4);
+                                        return Beta: ${beta} | P-valor: ${pval};
+                                    }
+                                }
+                            } 
+                        } 
                     }
                 });
             }
 
-            // 2. BARRAS
-            let catsShow = configuracaoCategorias;
-            if (filtroCategoriaAtivo !== 'TODOS') catsShow = configuracaoCategorias.filter(c => c.id === filtroCategoriaAtivo);
-            catsShow = catsShow.filter(c => (gastosPorCategoriaGlobal[c.id]||0)>0 || c.min>0);
-            const labels = catsShow.map(c => c.id);
-            const dataReal = catsShow.map(c => gastosPorCategoriaGlobal[c.id]||0);
-            const dataMin = catsShow.map(c => (c.min/100)*orcamentoTotalGlobal);
-
-            if(chartCategoriasInstance) chartCategoriasInstance.destroy();
-            chartCategoriasInstance = new Chart(document.getElementById('chartCategorias'), {
+            // 2. Barras
+            const ctxCat = document.getElementById('chartCategorias');
+            if(chartCategorias) chartCategorias.destroy();
+            let cats = configuracaoCategorias;
+            if(filtroCategoriaAtivo !== 'TODOS') cats = cats.filter(c => c.id === filtroCategoriaAtivo);
+            cats = cats.filter(c => (gastosPorCategoriaGlobal[c.id]||0)>0 || c.min>0);
+            
+            chartCategorias = new Chart(ctxCat, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: cats.map(c => c.nome),
                     datasets: [
-                        { label: 'Realizado', data: dataReal, backgroundColor: '#3b82f6', borderRadius: 4 },
-                        { label: 'Mínimo Legal', data: dataMin, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: '#ef4444', borderWidth: 1, type: 'bar' }
+                        { label: 'Executado (R$)', data: cats.map(c=>gastosPorCategoriaGlobal[c.id]||0), backgroundColor: '#3b82f6', borderRadius: 4 },
+                        { label: 'Meta Mínima', data: cats.map(c=>(c.min/100)*orcamentoTotalGlobal), backgroundColor: 'rgba(239,68,68,0.1)', borderColor:'#ef4444', borderWidth:1, type:'bar' }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:true} } }
             });
 
-            // 3. SCATTER
-            const scatterData = dadosFiltrados.slice(0, 800).map(p => ({ x: p.C_i, y: p.Score, s: p.selecionado, m: p.motivo }));
-            if(chartScatterInstance) chartScatterInstance.destroy();
-            chartScatterInstance = new Chart(document.getElementById('chartScatter'), {
+            // 3. Scatter (Inclui NÃO selecionados)
+            const ctxScat = document.getElementById('chartScatter');
+            if(chartScatter) chartScatter.destroy();
+            // Amostra para performance visual
+            const scatData = dados.slice(0,2000).map(p => ({
+                x: p.C_i, y: p.Score,
+                bg: p.selecionado ? (p.motivo.includes('LEGAL')?'#a855f7':'#22c55e') : '#cbd5e1',
+                r: p.selecionado ? 4 : 2,
+                lbl: p.id
+            }));
+
+            chartScatter = new Chart(ctxScat, {
                 type: 'scatter',
                 data: {
                     datasets: [{
                         label: 'Projetos',
-                        data: scatterData,
-                        backgroundColor: ctx => !ctx.raw ? '' : (!ctx.raw.s ? '#e5e7eb' : (ctx.raw.m.includes('LEGAL') ? '#9333ea' : '#22c55e')),
-                        pointRadius: ctx => !ctx.raw ? 0 : (ctx.raw.s ? 4 : 3)
+                        data: scatData,
+                        pointBackgroundColor: scatData.map(d=>d.bg),
+                        pointRadius: scatData.map(d=>d.r)
                     }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    scales: { x: { type: 'logarithmic', title: {display:true, text:'Custo (Log)'}, grid: {display:false} }, y: { title: {display:true, text:'Score'} } },
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => R$ ${c.raw.x.toLocaleString()} | Score: ${c.raw.y.toFixed(3)} } } }
+                    scales: { x: {type:'logarithmic', grid:{display:false}}, y: {grid:{color:'#f8fafc'}} },
+                    plugins: { legend: {display:false}, tooltip: { callbacks: { label: c => ID:${c.raw.lbl} | $: ${c.raw.x.toLocaleString()} | Sc: ${c.raw.y.toFixed(3)} } } }
                 }
             });
 
-            // 4. DENSIDADE
-            const scoresOriginal = dadosFiltrados.map(d => d.ScoreOriginal);
-            const scoresRobust = dadosFiltrados.map(d => d.Score);
-            const densOriginal = createDensityData(scoresOriginal, 25);
-            const densRobust = createDensityData(scoresRobust, 25);
+            // 4. Densidade Comparativa
+            const ctxDens = document.getElementById('chartDensidade');
+            if(chartDensidade) chartDensidade.destroy();
+            
+            const scoresRob = dados.map(d => d.Score);
+            const scoresOrig = dados.map(d => d.ScoreOriginal);
+            const densRob = createDensityData(scoresRob, 30);
+            const densOrig = createDensityData(scoresOrig, 30);
 
-            if(chartDensidadeInstance) chartDensidadeInstance.destroy();
-            chartDensidadeInstance = new Chart(document.getElementById('chartDensidade'), {
+            // Stats para tooltip
+            const meanRob = getMean(scoresRob).toFixed(3), sdRob = getSD(scoresRob).toFixed(3);
+            const meanOrig = getMean(scoresOrig).toFixed(3), sdOrig = getSD(scoresOrig).toFixed(3);
+
+            chartDensidade = new Chart(ctxDens, {
                 type: 'line',
                 data: {
-                    labels: densRobust.labels,
+                    labels: densRob.labels,
                     datasets: [
-                        { label: 'Robusto', data: densRobust.data, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, fill: true, tension: 0.4 },
-                        { label: 'Original', data: densOriginal.data, borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], fill: false, tension: 0.4 }
+                        { label: 'Robusto', data: densRob.data, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, fill: true, tension: 0.4 },
+                        { label: 'Original', data: densOrig.data, borderColor: '#9ca3af', borderWidth: 2, borderDash: [5, 5], fill: false, tension: 0.4 }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, elements: { point: { radius: 0 } }, scales: { x: { display: false }, y: { display: false } } }
+                options: { 
+                    responsive: true, maintainAspectRatio: false, elements:{point:{radius:0}}, 
+                    scales:{x:{display:false}, y:{display:false}},
+                    plugins: {
+                        legend: {display:true},
+                        title: {
+                            display: true,
+                            text: 'Distribuição de Scores (Prioridade)',
+                            font: { size: 11, weight: 'bold' },
+                            color: '#64748b'
+                        },
+                        subtitle: {
+                            display: true,
+                            text: Robusto: μ=${meanRob} σ=${sdRob} | Original: μ=${meanOrig} σ=${sdOrig},
+                            color: '#6366f1',
+                            font: { size: 10 },
+                            padding: { bottom: 10 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: () => Robusto: μ=${meanRob}, σ=${sdRob}\nOriginal: μ=${meanOrig}, σ=${sdOrig}
+                            }
+                        }
+                    }
+                }
             });
+
+            // 5. Pie Charts (Novos)
+            const ctxPieP = document.getElementById('chartPieProjetos');
+            const ctxPieV = document.getElementById('chartPieVotos');
+            if(chartPieProjetos) chartPieProjetos.destroy();
+            if(chartPieVotos) chartPieVotos.destroy();
+
+            const sel = dados.filter(p=>p.selecionado);
+            const catCounts = {}, catVotos = {};
+            sel.forEach(p => {
+                const c = configuracaoCategorias.find(x=>x.id===p.id_cat)?.nome || p.id_cat;
+                catCounts[c] = (catCounts[c]||0) + 1;
+                catVotos[c] = (catVotos[c]||0) + p.V_i;
+            });
+
+            const bgColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
+
+            chartPieProjetos = new Chart(ctxPieP, {
+                type: 'doughnut',
+                data: { labels: Object.keys(catCounts), datasets: [{ data: Object.values(catCounts), backgroundColor: bgColors, borderWidth:0 }] },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{boxWidth:10, font:{size:9}}}} }
+            });
+
+            chartPieVotos = new Chart(ctxPieV, {
+                type: 'doughnut',
+                data: { labels: Object.keys(catVotos), datasets: [{ data: Object.values(catVotos), backgroundColor: bgColors, borderWidth:0 }] },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{boxWidth:10, font:{size:9}}}} }
+            });
+        }
+
+        function createDensityData(scores, bins=30) {
+            if (scores.length===0) return {labels:[],data:[]};
+            const min=Math.min(...scores), max=Math.max(...scores), step=(max-min)/bins;
+            const labels=[], data=new Array(bins).fill(0);
+            for(let i=0;i<bins;i++) labels.push((min+i*step).toFixed(2));
+            scores.forEach(s=>{ let idx=Math.floor((s-min)/step); if(idx>=bins) idx=bins-1; data[idx]++; });
+            return {labels,data};
+        }
+
+        // Helpers
+        function gerarDadosFicticios() {
+            const cats = ["Educação", "Saúde", "Segurança", "Infraestrutura", "Cultura"];
+            const data = [];
+            for(let i=1; i<=1000; i++) {
+                data.push({
+                    id: i,
+                    id_cat_raw: cats[Math.floor(Math.random()*cats.length)],
+                    id_cat: "",
+                    C_i: Math.round(Math.exp(Math.random()*2.5 + 7)),
+                    V_i: Math.round(Math.pow(Math.random(), 3)*5000)+20
+                });
+            }
+            processDataArrayInternal(data);
+        }
+
+        function processDataArrayInternal(arr) {
+            dadosBrutos = arr;
+            document.getElementById('dataStatus').innerHTML = <span class="text-green-600 font-bold">✓ ${arr.length} registros</span>;
+            document.getElementById('headerTotalRows').innerText = arr.length;
+            detectarEAtualizarCategorias();
+        }
+
+        // Listener Arquivos
+        document.getElementById('csvFile').addEventListener('change', (e) => {
+            const f = e.target.files[0];
+            if(!f) return;
+            const ext = f.name.split('.').pop().toLowerCase();
+            document.getElementById('dataStatus').innerText = "Lendo...";
+            
+            if(ext === 'csv') {
+                Papa.parse(f, { header: true, dynamicTyping: false, skipEmptyLines: true, complete: (r) => processDataArray(r.data) });
+            } else {
+                const r = new FileReader();
+                r.onload = (evt) => {
+                    const wb = XLSX.read(new Uint8Array(evt.target.result), {type:'array'});
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    processDataArray(XLSX.utils.sheet_to_json(ws));
+                };
+                r.readAsArrayBuffer(f);
+            }
+        });
+
+        function exportarTabela() {
+            if(resultadosUltimaSimulacao.length === 0) return;
+            let csv = "Rank,ID,Categoria,Custo,Votos,Score,Status,Motivo\n";
+            resultadosUltimaSimulacao.forEach((p, i) => {
+                const catName = configuracaoCategorias.find(c=>c.id===p.id_cat)?.nome || p.id_cat;
+                csv += ${i+1},"${p.id}","${catName}",${p.C_i},${p.V_i},${p.Score.toFixed(5)},${p.selecionado?'Selecionado':'Nao'},"${p.motivo}"\n;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "resultados_simulacao.csv";
+            link.click();
         }
 
         initUI();
