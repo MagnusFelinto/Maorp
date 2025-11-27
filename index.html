@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador de Alocação Orçamentária - Modelo Integrado TCC</title>
     
-    <!-- Bibliotecas Externas -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -56,10 +57,8 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1600px] mx-auto">
         
-        <!-- COLUNA 1: CONFIGURAÇÃO (3 colunas) -->
         <div class="lg:col-span-3 space-y-5">
             
-            <!-- Card 1: Dados -->
             <div class="card p-4 border-t-4 border-blue-500">
                 <h2 class="text-sm font-bold mb-3 text-slate-800 uppercase tracking-wide flex items-center">
                     <i class="fa-solid fa-database mr-2 text-blue-500"></i> 1. Carregar Dados
@@ -98,7 +97,6 @@
                 </div>
             </div>
 
-            <!-- Card 2: Parâmetros -->
             <div class="card p-4 border-t-4 border-emerald-500">
                 <h2 class="text-sm font-bold mb-3 text-slate-800 uppercase tracking-wide flex items-center">
                     <i class="fa-solid fa-sliders mr-2 text-emerald-500"></i> 2. Parâmetros
@@ -147,7 +145,6 @@
                 </div>
             </div>
 
-            <!-- Card 3: Regras Setoriais -->
             <div class="card p-4 border-t-4 border-purple-500 flex flex-col h-[350px]">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center">
@@ -188,53 +185,44 @@
             </button>
         </div>
 
-        <!-- COLUNA 2: DASHBOARD (9 colunas) -->
         <div class="lg:col-span-9 flex flex-col gap-5">
             
-            <!-- Filtros -->
             <div class="card p-2 flex flex-wrap gap-2 items-center pl-4 min-h-[50px]" id="filterBar">
                 <span class="text-xs font-bold text-slate-400 uppercase mr-2"><i class="fa-solid fa-filter"></i> Filtrar Visão:</span>
                 <span class="text-xs italic text-slate-300">Execute a simulação primeiro.</span>
             </div>
 
-            <!-- KPIs -->
             <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-                <!-- KPI 1 -->
                 <div class="card p-3 border-l-4 border-blue-500 relative">
                     <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Número de projetos aprovados em relação ao total disponível no filtro atual.</div></div>
                     <p class="text-[10px] font-bold text-slate-500 uppercase">Projetos Aprovados</p>
                     <div class="flex gap-1 items-baseline mt-1"><p class="text-xl font-bold text-slate-800" id="resSelecionados">-</p><span class="text-xs text-slate-400">/ <span id="resTotalProjetos">-</span></span></div>
                     <p class="text-[10px] text-blue-600 font-semibold" id="resPctProjetos">0%</p>
                 </div>
-                <!-- KPI 2 -->
                 <div class="card p-3 border-l-4 border-yellow-500 relative">
                     <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Total financeiro alocado para os projetos selecionados neste cenário.</div></div>
                     <p class="text-[10px] font-bold text-slate-500 uppercase">Orçamento Usado</p>
                     <p class="text-lg font-bold text-slate-800 truncate mt-1" id="resOrcamento">-</p>
                     <p class="text-[10px] text-yellow-600 font-semibold" id="resEficienciaOrc">-</p>
                 </div>
-                <!-- KPI 3 -->
                 <div class="card p-3 border-l-4 border-indigo-500 relative">
                     <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Média dos Scores Finais dos projetos selecionados. Indica a "qualidade" matemática da seleção.</div></div>
                     <p class="text-[10px] font-bold text-slate-500 uppercase">Utilidade Média</p>
                     <p class="text-xl font-bold text-slate-800 mt-1" id="resUtilidadeMedia">-</p>
                     <p class="text-[10px] text-indigo-600 font-semibold">Score Médio</p>
                 </div>
-                <!-- KPI 4 -->
                 <div class="card p-3 border-l-4 border-purple-500 relative">
                     <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Retorno sobre Investimento Social: Total de votos atendidos dividido pelo custo total investido.</div></div>
                     <p class="text-[10px] font-bold text-slate-500 uppercase">ROI Social</p>
                     <p class="text-xl font-bold text-slate-800 mt-1" id="resRoi">-</p>
                     <p class="text-[10px] text-purple-600 font-semibold">Votos / R$ 1,00</p>
                 </div>
-                <!-- KPI 5 -->
                 <div class="card p-3 border-l-4 border-teal-500 relative">
                     <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Soma total dos votos (pessoas beneficiadas) dos projetos que foram selecionados.</div></div>
                     <p class="text-[10px] font-bold text-slate-500 uppercase">Votos Atendidos</p>
                     <p class="text-lg font-bold text-slate-800 truncate mt-1" id="resVotosAtendidos">-</p>
                     <p class="text-[10px] text-teal-600 font-semibold" id="resPctVotos">-</p>
                 </div>
-                <!-- KPI 6 -->
                 <div class="card p-3 border-l-4 border-pink-500 relative">
                     <div class="absolute top-2 right-2 tooltip-container"><i class="fa-solid fa-circle-info text-slate-300 text-xs"></i><div class="tooltip-content">Eficiência média de custo: Quanto de Utilidade é gerada a cada R$ 1.000,00 investidos.</div></div>
                     <p class="text-[10px] font-bold text-slate-500 uppercase">Eficiência Média</p>
@@ -243,9 +231,7 @@
                 </div>
             </div>
 
-            <!-- Gráficos Linha 1 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <!-- Análise Econométrica -->
                 <div class="card p-4 h-80">
                     <div class="flex justify-between items-start mb-2">
                         <div>
@@ -260,7 +246,6 @@
                     <div class="h-60 relative w-full"><canvas id="chartRegressao"></canvas></div>
                 </div>
                 
-                <!-- Execução vs Mínimo -->
                 <div class="card p-4 h-80">
                     <div class="flex justify-between items-start mb-2">
                         <div>
@@ -276,9 +261,7 @@
                 </div>
             </div>
 
-            <!-- Gráficos Linha 2 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <!-- Fronteira de Eficiência (Com Não Resolvidos) -->
                 <div class="card p-4 h-80">
                     <div class="flex justify-between items-start mb-2">
                         <div>
@@ -311,7 +294,6 @@
                 </div>
             </div>
 
-            <!-- Gráficos Pizza (Novos) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="card p-4 h-72">
                     <div class="flex justify-between items-start mb-2">
@@ -327,7 +309,6 @@
                 </div>
             </div>
 
-            <!-- Tabela -->
             <div class="card p-0 overflow-hidden border border-slate-200 mb-10">
                 <div class="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center">
                     <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
@@ -373,13 +354,16 @@
         };
         function normalCDF(x) { var t=1/(1+.2316419*Math.abs(x)), d=.3989423*Math.exp(-x*x/2), p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x>0?1-p:p; }
         function calculatePValue(t) { return 2*(1-normalCDF(Math.abs(t))); }
+        
+        // CORREÇÃO AQUI: Adicionado operador de multiplicação (*)
         const getQuantile=(a,q)=>{
             const s=[...a].sort((x,y)=>x-y), 
             p=(s.length-1)*q , 
             b=Math.floor(p), 
             r=p-b; 
-            return s[b+1]!==undefined?s[b]+r(s[b+1]-s[b]):s[b];
+            return s[b+1]!==undefined ? s[b] + r * (s[b+1]-s[b]) : s[b];
         };
+
         const getMean=(a)=>a.reduce((x,y)=>x+y,0)/(a.length||1);
         const getSD=(a)=>{const m=getMean(a); return Math.sqrt(a.reduce((s,n)=>s+(n-m)**2,0)/(a.length-1||1));};
         function normalizeString(s) { return s?s.toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim():""; }
@@ -428,7 +412,8 @@
             const keyCusto = findKey(['CUSTO', 'VALOR', 'PRECO', 'ORCAMENTO']);
             const keyVotos = findKey(['VOTOS', 'APOIO', 'LIKES']);
             
-            document.getElementById('colunasDetectadas').innerText =  `Detectado: ${keyCat||'?'} | ${keyCusto||'?'} | ${keyVotos||'?'}`;
+            // CORREÇÃO: Template literals
+            document.getElementById('colunasDetectadas').innerText = `Detectado: ${keyCat||'?'} | ${keyCusto||'?'} | ${keyVotos||'?'}`;
 
             if (!keyCat || !keyCusto || !keyVotos) {
                 alert("ERRO: Colunas obrigatórias não encontradas. Verifique o arquivo.");
@@ -453,7 +438,8 @@
                 };
             }).filter(d => d !== null);
             
-            document.getElementById('dataStatus').innerHTML = <span class="text-green-600 font-bold">✓ ${dadosBrutos.length} registros carregados</span>;
+            // CORREÇÃO: Template literals
+            document.getElementById('dataStatus').innerHTML = `<span class="text-green-600 font-bold">✓ ${dadosBrutos.length} registros carregados</span>`;
             document.getElementById('headerTotalRows').innerText = dadosBrutos.length;
 
             detectarEAtualizarCategorias();
@@ -492,6 +478,7 @@
             configuracaoCategorias.forEach((cat, index) => {
                 const row = document.createElement('div');
                 row.className = "grid grid-cols-12 gap-1 items-center py-1 border-b hover:bg-slate-50 text-xs";
+                // CORREÇÃO: Template literals
                 row.innerHTML = `
                     <div class="col-span-6 pl-2 font-medium truncate text-slate-700" title="${cat.nome}">${cat.nome}</div>
                     <div class="col-span-3 px-1"><input type="number" value="${cat.min}" min="0" max="100" onchange="updCat(${index},'min',this.value)" class="w-full border border-slate-300 rounded text-center text-red-700 focus:border-blue-500 outline-none"></div>
@@ -511,10 +498,11 @@
             const el = document.getElementById('alphaStatus');
             const btn = document.getElementById('btnExecutar');
             if(Math.abs(s-1)>0.01) {
-                el.innerHTML = <span class='text-red-600'>Total: ${s.toFixed(2)} (Ajuste para 1.0)</span>;
+                // CORREÇÃO: Template literals
+                el.innerHTML = `<span class='text-red-600'>Total: ${s.toFixed(2)} (Ajuste para 1.0)</span>`;
                 btn.disabled = true; btn.classList.add('opacity-50');
             } else {
-                el.innerHTML = <span class='text-green-600'>Configuração OK</span>;
+                el.innerHTML = `<span class='text-green-600'>Configuração OK</span>`;
                 btn.disabled = false; btn.classList.remove('opacity-50');
             }
         }
@@ -530,6 +518,7 @@
             else if(soma > 90) { cor = 'bg-red-100 text-red-800 border-red-200'; msg = 'CRÍTICO (RÍGIDO)'; }
             else if(soma > 60) { cor = 'bg-yellow-100 text-yellow-800 border-yellow-200'; msg = 'MODERADO'; }
             
+            // CORREÇÃO: Template literals
             el.innerHTML = `Soma Mínimos: <b>${soma.toFixed(1)}%</b> - ${msg}`;
             el.className = `mt-2 text-[10px] font-bold p-2 rounded text-center border ${cor}`;
         }
@@ -617,6 +606,7 @@
             div.innerHTML = '<span class="text-xs font-bold text-slate-400 mr-2 flex items-center"><i class="fa-solid fa-filter mr-1"></i> VISÃO:</span>';
             const addBtn = (id, lbl) => {
                 const b = document.createElement('button');
+                // CORREÇÃO: Template literals
                 b.className = `filter-btn ${filtroCategoriaAtivo===id ? 'filter-btn-active':'filter-btn-inactive'} mr-1 mb-1`;
                 b.innerText = lbl;
                 b.onclick = () => { filtroCategoriaAtivo=id; gerarBotoesFiltro(); filtrarResultados(id); };
@@ -667,6 +657,7 @@
             const frag = document.createDocumentFragment();
             const limit = 5000;
             const view = dados.slice(0, limit);
+            // CORREÇÃO: Template literals
             document.getElementById('tableStatus').innerText = `Mostrando ${view.length} de ${dados.length}`;
             if(view.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center">Vazio</td></tr>'; return; }
 
@@ -677,6 +668,7 @@
                 const sel = p.selecionado;
                 const legal = p.motivo.includes('LEGAL');
                 
+                // CORREÇÃO: Template literals
                 tr.innerHTML = `
                     <td class="px-4 py-1.5 text-slate-500">#${resultadosUltimaSimulacao.indexOf(p)+1}</td>
                     <td class="px-4 py-1.5 font-mono text-xs">${p.id}</td>
@@ -741,6 +733,7 @@
             const ctxReg = document.getElementById('chartRegressao');
             if(chartRegressao) chartRegressao.destroy();
             if(reg && reg.betas) {
+                // CORREÇÃO: Template literals
                 document.getElementById('regressaoR2').innerText = `R²: ${(reg.r2*100).toFixed(1)}%`;
                 chartRegressao = new Chart(ctxReg, {
                     type: 'bar',
@@ -762,6 +755,7 @@
                                         const key = ['custo','votos','peso','min'][ctx.dataIndex];
                                         const beta = ctx.raw.toFixed(3);
                                         const pval = reg.pValues[key].toFixed(4);
+                                        // CORREÇÃO: Template literals
                                         return `Beta: ${beta} | P-valor: ${pval}`;
                                     }
                                 }
@@ -814,7 +808,8 @@
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     scales: { x: {type:'logarithmic', grid:{display:false}}, y: {grid:{color:'#f8fafc'}} },
-                    plugins: { legend: {display:false}, tooltip: { callbacks: { label: c => `ID:${c.raw.lbl}` | `$: ${c.raw.x.toLocaleString()}` | `Sc: ${c.raw.y.toFixed(3)}` } } }
+                    // CORREÇÃO: Template literals
+                    plugins: { legend: {display:false}, tooltip: { callbacks: { label: c => `ID:${c.raw.lbl} | $: ${c.raw.x.toLocaleString()} | Sc: ${c.raw.y.toFixed(3)}` } } }
                 }
             });
 
@@ -853,12 +848,14 @@
                         },
                         subtitle: {
                             display: true,
-                            text: `Robusto: μ=${meanRob} σ=${sdRob}` | `Original: μ=${meanOrig} σ=${sdOrig}`,
+                            // CORREÇÃO: Template literals
+                            text: `Robusto: μ=${meanRob} σ=${sdRob} | Original: μ=${meanOrig} σ=${sdOrig}`,
                             color: '#6366f1',
                             font: { size: 10 },
                             padding: { bottom: 10 }
                         },
                         tooltip: {
+                            // CORREÇÃO: Template literals
                             callbacks: {
                                 afterBody: () => `Robusto: μ=${meanRob}, σ=${sdRob}\nOriginal: μ=${meanOrig}, σ=${sdOrig}` 
                             }
@@ -923,7 +920,8 @@
 
         function processDataArrayInternal(arr) {
             dadosBrutos = arr;
-            document.getElementById('dataStatus').innerHTML = <span class="text-green-600 font-bold">✓ ${arr.length} registros</span>;
+            // CORREÇÃO: Template literals
+            document.getElementById('dataStatus').innerHTML = `<span class="text-green-600 font-bold">✓ ${arr.length} registros</span>`;
             document.getElementById('headerTotalRows').innerText = arr.length;
             detectarEAtualizarCategorias();
         }
@@ -953,6 +951,7 @@
             let csv = "Rank,ID,Categoria,Custo,Votos,Score,Status,Motivo\n";
             resultadosUltimaSimulacao.forEach((p, i) => {
                 const catName = configuracaoCategorias.find(c=>c.id===p.id_cat)?.nome || p.id_cat;
+                // CORREÇÃO: Template literals
                 csv += `${i+1},"${p.id}","${catName}",${p.C_i},${p.V_i},${p.Score.toFixed(5)},${p.selecionado?'Selecionado':'Nao'},"${p.motivo}"\n`;
             });
             
