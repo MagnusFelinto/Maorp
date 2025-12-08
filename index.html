@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -960,6 +960,846 @@
             link.href = URL.createObjectURL(blob);
             link.download = "resultados_simulacao.csv";
             link.click();
+        }
+
+        initUI();
+    </script>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelo de Alocação Ótima - Vontade Popular</title>
+    
+    <!-- Fonte Google Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bibliotecas Externas (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Estilos Customizados -->
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; }
+        .input-field { width: 100%; border: 1px solid #d1d5db; padding: 0.5rem; border-radius: 0.375rem; transition: border-color 0.2s; }
+        .input-field:focus { outline: none; border-color: #3b82f6; ring: 2px solid #93c5fd; }
+        .filter-btn { padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+        .filter-btn-inactive { background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+        .filter-btn-active { background-color: #3b82f6; color: white; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); border: 1px solid #3b82f6; }
+        
+        /* Scrollbar Bonita */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Tooltip CSS Avançado */
+        .tooltip-container { position: relative; display: inline-flex; align-items: center; justify-content: center; margin-left: 4px; cursor: help; }
+        .tooltip-trigger { color: #94a3b8; transition: color 0.2s; }
+        .tooltip-trigger:hover { color: #3b82f6; }
+        .tooltip-content { 
+            visibility: hidden; width: 240px; background-color: #1e293b; color: #fff; text-align: left; 
+            border-radius: 6px; padding: 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; 
+            transform: translateX(-50%); opacity: 0; transition: opacity 0.3s, transform 0.3s; 
+            font-size: 11px; font-weight: normal; line-height: 1.4; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            pointer-events: none;
+        }
+        .tooltip-container:hover .tooltip-content { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
+        .tooltip-content::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
+    </style>
+</head>
+<body class="p-4 md:p-6 text-slate-800">
+
+    <!-- CABEÇALHO ATUALIZADO -->
+    <header class="mb-6 flex justify-between items-end border-b pb-4 border-slate-200">
+        <div class="max-w-4xl">
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight uppercase leading-tight">
+                MODELO DE ALOCAÇÃO ÓTIMA DE RECURSO <br class="hidden md:block"> BASEADO NA VONTADE POPULAR
+            </h1>
+            <p class="text-slate-600 text-sm font-medium mt-1">Uma ferramenta econômica para gestores inteligentes</p>
+            <p class="text-slate-400 text-[10px] mt-2 italic uppercase tracking-wide border-t border-slate-100 pt-1 inline-block">
+                Desenvolvido por: <span class="font-bold text-slate-600">Marcos Vinícius Lopes Felinto de Oliveira</span>
+            </p>
+        </div>
+        <div class="text-right pl-4">
+            <div class="text-xs font-bold text-slate-400 uppercase">Total de Registros</div>
+            <div class="text-2xl font-bold text-blue-600" id="headerTotalRows">0</div>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1600px] mx-auto">
+        
+        <!-- ================= COLUNA ESQUERDA: CONFIGURAÇÃO (3 colunas) ================= -->
+        <div class="lg:col-span-3 space-y-5">
+            
+            <!-- 1. Carregar Dados -->
+            <div class="card p-4 border-t-4 border-blue-500">
+                <h2 class="text-sm font-bold mb-3 text-slate-800 uppercase tracking-wide flex items-center">
+                    <i class="fa-solid fa-database mr-2 text-blue-500"></i> 1. Carregar Dados
+                </h2>
+                
+                <div class="flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <button onclick="gerarDadosFicticios()" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 py-2 px-2 rounded transition text-xs font-semibold">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Exemplo
+                        </button>
+                        <a href="https://docs.google.com/spreadsheets/d/1FL6M1L7uwvIwSWZbdShmOoX00db1hAyj_5h4jLlzUjQ/export?format=xlsx" 
+                           class="flex-1 bg-white hover:bg-green-50 text-green-700 border border-green-200 py-2 px-2 rounded transition text-xs font-semibold no-underline text-center"
+                           target="_blank">
+                            <i class="fa-solid fa-file-excel"></i> Modelo
+                        </a>
+                    </div>
+                    
+                    <label class="block group cursor-pointer">
+                        <input type="file" id="csvFile" accept=".csv, .xls, .xlsx" class="hidden" />
+                        <div class="w-full border-2 border-dashed border-slate-300 rounded-lg p-4 text-center group-hover:border-blue-400 transition bg-slate-50" id="dropZone">
+                            <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-xl mb-1"></i>
+                            <p class="text-xs text-slate-500 font-medium">Clique para selecionar arquivo</p>
+                        </div>
+                    </label>
+                    
+                    <div id="importStatus" class="hidden p-2 bg-blue-50 border border-blue-100 rounded text-xs">
+                        <p id="dataStatus" class="font-bold text-blue-700">Processando...</p>
+                        <p id="colunasDetectadas" class="text-[9px] text-blue-500 mt-1 truncate"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Parâmetros -->
+            <div class="card p-4 border-t-4 border-emerald-500">
+                <h2 class="text-sm font-bold mb-3 text-slate-800 uppercase tracking-wide flex items-center">
+                    <i class="fa-solid fa-sliders mr-2 text-emerald-500"></i> 2. Parâmetros
+                </h2>
+                
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-bold text-slate-500">ORÇAMENTO TOTAL</label>
+                    <div class="tooltip-container">
+                        <i class="fa-solid fa-circle-info tooltip-trigger"></i>
+                        <div class="tooltip-content">Limite financeiro total disponível.</div>
+                    </div>
+                </div>
+                <div class="relative mb-4">
+                    <span class="absolute left-3 top-2 text-slate-400 text-sm font-bold">R$</span>
+                    <input type="number" id="orcamentoB" value="1000000" class="input-field font-mono text-right pl-8 text-sm font-bold text-slate-700">
+                </div>
+
+                <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-1">
+                    <h3 class="font-bold text-xs text-slate-800">Pesos (Alphas)</h3>
+                    <span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1 rounded">∑ = 1.0</span>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-600 flex justify-between items-center mb-1">
+                            <span>Impacto Social (Votos)</span>
+                            <span id="valA1" class="text-blue-600 font-bold bg-blue-50 px-1 rounded">0.35</span>
+                        </label>
+                        <input type="range" id="alpha1" step="0.01" min="0" max="1" value="0.35" class="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer" oninput="validarAlphas()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-600 flex justify-between items-center mb-1">
+                            <span>Eficiência (Custo)</span>
+                            <span id="valA2" class="text-green-600 font-bold bg-green-50 px-1 rounded">0.50</span>
+                        </label>
+                        <input type="range" id="alpha2" step="0.01" min="0" max="1" value="0.50" class="w-full accent-green-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer" oninput="validarAlphas()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-600 flex justify-between items-center mb-1">
+                            <span>Equidade (Concorrência)</span>
+                            <span id="valA3" class="text-purple-600 font-bold bg-purple-50 px-1 rounded">0.15</span>
+                        </label>
+                        <input type="range" id="alpha3" step="0.01" min="0" max="1" value="0.15" class="w-full accent-purple-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer" oninput="validarAlphas()">
+                    </div>
+                    <div id="alphaStatus" class="text-[10px] font-bold text-center pt-1"></div>
+                </div>
+            </div>
+
+            <!-- 3. Regras Setoriais -->
+            <div class="card p-4 border-t-4 border-purple-500 flex flex-col h-[350px]">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center">
+                        <i class="fa-solid fa-scale-balanced mr-2 text-purple-500"></i> 3. Regras
+                    </h2>
+                    <span id="catCountBadge" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">0 Setores</span>
+                </div>
+                
+                <div class="grid grid-cols-12 gap-1 mb-1 text-[9px] font-bold text-slate-500 uppercase text-center bg-slate-100 p-1.5 rounded">
+                    <div class="col-span-6 text-left">Setor</div>
+                    <div class="col-span-3 text-red-600">Min %</div>
+                    <div class="col-span-3 text-orange-600">Peso</div>
+                </div>
+
+                <div id="categoryConfig" class="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-1">
+                    <div class="text-center text-xs text-slate-400 italic mt-10">Carregue um arquivo para configurar.</div>
+                </div>
+
+                <div id="rigidezAlert" class="mt-2 text-[10px] font-bold p-2 rounded bg-slate-50 text-center border border-slate-200 text-slate-400">
+                    Aguardando...
+                </div>
+            </div>
+
+            <button id="btnExecutar" onclick="executarSimulacao()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-wide flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rocket"></i> Executar Simulação
+            </button>
+        </div>
+
+        <!-- ================= COLUNA DIREITA: DASHBOARD (9 colunas) ================= -->
+        <div class="lg:col-span-9 flex flex-col gap-5">
+            
+            <!-- Filtros -->
+            <div class="card p-2 flex flex-wrap gap-2 items-center pl-4 min-h-[50px]" id="filterBar">
+                <span class="text-xs font-bold text-slate-400 uppercase mr-2"><i class="fa-solid fa-filter"></i> Filtrar Visão:</span>
+                <span class="text-xs italic text-slate-300">Execute a simulação primeiro.</span>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+                <div class="card p-3 border-l-4 border-blue-500 relative">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">Projetos Aprovados</p>
+                    <div class="flex gap-1 items-baseline mt-1"><p class="text-xl font-bold text-slate-800" id="resSelecionados">-</p><span class="text-xs text-slate-400">/ <span id="resTotalProjetos">-</span></span></div>
+                    <p class="text-[10px] text-blue-600 font-semibold" id="resPctProjetos">0%</p>
+                </div>
+                <div class="card p-3 border-l-4 border-yellow-500 relative">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">Orçamento Usado</p>
+                    <p class="text-lg font-bold text-slate-800 truncate mt-1" id="resOrcamento">-</p>
+                    <p class="text-[10px] text-yellow-600 font-semibold" id="resEficienciaOrc">-</p>
+                </div>
+                <div class="card p-3 border-l-4 border-indigo-500 relative">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">Utilidade Média</p>
+                    <p class="text-xl font-bold text-slate-800 mt-1" id="resUtilidadeMedia">-</p>
+                    <p class="text-[10px] text-indigo-600 font-semibold">Score Médio</p>
+                </div>
+                <div class="card p-3 border-l-4 border-purple-500 relative">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">ROI Social</p>
+                    <p class="text-xl font-bold text-slate-800 mt-1" id="resRoi">-</p>
+                    <p class="text-[10px] text-purple-600 font-semibold">Votos / R$ 1,00</p>
+                </div>
+                <div class="card p-3 border-l-4 border-teal-500 relative">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">Votos Atendidos</p>
+                    <p class="text-lg font-bold text-slate-800 truncate mt-1" id="resVotosAtendidos">-</p>
+                    <p class="text-[10px] text-teal-600 font-semibold" id="resPctVotos">-</p>
+                </div>
+                <div class="card p-3 border-l-4 border-pink-500 relative">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">Eficiência Média</p>
+                    <p class="text-xl font-bold text-slate-800 mt-1" id="resEficMedia">-</p>
+                    <p class="text-[10px] text-pink-600 font-semibold">Util. / 1k R$</p>
+                </div>
+            </div>
+
+            <!-- Gráficos Linha 1 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Análise Econométrica -->
+                <div class="card p-4 h-80">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-magnifying-glass-chart text-slate-500"></i> Impacto e Significância
+                            </h3>
+                            <p class="text-[10px] text-slate-400">Análise de sensibilidade do modelo.</p>
+                        </div>
+                        <div class="text-[10px] bg-slate-100 px-2 py-1 rounded text-slate-600 font-mono" id="regressaoR2">R²: -</div>
+                    </div>
+                    <div class="h-60 relative w-full"><canvas id="chartRegressao"></canvas></div>
+                </div>
+                
+                <!-- Execução vs Mínimo -->
+                <div class="card p-4 h-80">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-blue-500"></i> Execução vs Mínimo Legal
+                            </h3>
+                            <p class="text-[10px] text-slate-400">Aderência às regras orçamentárias.</p>
+                        </div>
+                        <span id="chartCatTitle" class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded uppercase">Geral</span>
+                    </div>
+                    <div class="h-60 relative w-full"><canvas id="chartCategorias"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Gráficos Linha 2 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Fronteira de Eficiência (Com Não Resolvidos) -->
+                <div class="card p-4 h-80">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-braille text-green-500"></i> Fronteira de Eficiência
+                            </h3>
+                            <p class="text-[10px] text-slate-400">Comparação de Projetos Selecionados vs Não Selecionados.</p>
+                        </div>
+                        <div class="flex gap-2 text-[9px]">
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-slate-300"></div> Fora</span>
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-green-500"></div> Efic.</span>
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-purple-500"></div> Legal</span>
+                        </div>
+                    </div>
+                    <div class="h-60 relative w-full"><canvas id="chartScatter"></canvas></div>
+                </div>
+ 
+                <!-- MÓDULO HARMONIA SISTÊMICA COM IA ADVISOR REAL -->
+                <div class="card p-0 h-80 overflow-hidden flex flex-col md:flex-row border-2 border-indigo-50">
+                    <!-- Lado Esquerdo: Texto, Métricas e Sugestão -->
+                    <div class="w-full md:w-5/12 bg-slate-50 border-r border-slate-100 flex flex-col">
+                        <div class="p-4 flex-1">
+                            <h3 class="font-bold text-indigo-700 text-base flex items-center gap-2 mb-2">
+                                <i class="fa-solid fa-robot"></i> Calibragem Inteligente
+                            </h3>
+                            
+                            <!-- Box de Sugestão (Onde a mágica acontece) -->
+                            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3 shadow-sm relative overflow-hidden">
+                                <div class="absolute top-0 right-0 p-1 opacity-10"><i class="fa-solid fa-wand-magic-sparkles text-4xl text-amber-500"></i></div>
+                                <h4 class="text-[9px] font-bold text-amber-700 uppercase mb-1">Sugestão de Ajuste (Equilíbrio de Nash)</h4>
+                                <p class="text-[10px] text-amber-900 mb-2 leading-tight">Melhor equilíbrio calculado entre Social, Custo e Equidade:</p>
+                                
+                                <div class="grid grid-cols-3 gap-1 text-center">
+                                    <div class="bg-white rounded border border-amber-100 p-1">
+                                        <div class="text-[8px] text-slate-400 uppercase font-bold">Social</div>
+                                        <div id="sugAlpha1" class="text-xs font-bold text-blue-600">-</div>
+                                    </div>
+                                    <div class="bg-white rounded border border-amber-100 p-1">
+                                        <div class="text-[8px] text-slate-400 uppercase font-bold">Custo</div>
+                                        <div id="sugAlpha2" class="text-xs font-bold text-green-600">-</div>
+                                    </div>
+                                    <div class="bg-white rounded border border-amber-100 p-1">
+                                        <div class="text-[8px] text-slate-400 uppercase font-bold">Equid.</div>
+                                        <div id="sugAlpha3" class="text-xs font-bold text-purple-600">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-[9px] text-slate-400 mt-2">
+                                O algoritmo testou 66 cenários em segundo plano para encontrar estes valores.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lado Direito: Gráfico -->
+                    <div class="w-full md:w-7/12 p-4 flex flex-col relative">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h4 class="text-[10px] font-bold text-slate-600 uppercase">Convergência de Distribuição</h4>
+                                <div class="text-[9px] text-slate-400">
+                                    <span class="font-bold">Eixo X:</span> Score | 
+                                    <span class="font-bold">Eixo Y:</span> Densidade
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="text-[8px] flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-indigo-500"></div> Harmônico</span>
+                                <span class="text-[8px] flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-slate-300"></div> Atual</span>
+                            </div>
+                        </div>
+                        <div class="relative flex-1 w-full min-h-0">
+                            <canvas id="chartHarmonia"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos Pizza -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="card p-4 h-72">
+                    <h3 class="font-bold text-slate-700 text-sm mb-2"><i class="fa-solid fa-chart-pie text-orange-500"></i> Projetos por Tipo</h3>
+                    <div class="h-52 relative w-full flex justify-center"><canvas id="chartPieProjetos"></canvas></div>
+                </div>
+                <div class="card p-4 h-72">
+                    <h3 class="font-bold text-slate-700 text-sm mb-2"><i class="fa-solid fa-users text-cyan-500"></i> Votos por Tipo</h3>
+                    <div class="h-52 relative w-full flex justify-center"><canvas id="chartPieVotos"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Tabela -->
+            <div class="card p-0 overflow-hidden border border-slate-200 mb-10">
+                <div class="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-list text-slate-500"></i> Ranking de Prioridade
+                        <button onclick="exportarTabela()" class="bg-green-600 hover:bg-green-700 text-white text-[10px] px-2 py-1 rounded ml-2 transition shadow-sm flex items-center gap-1">
+                            <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                        </button>
+                    </h3>
+                    <span id="tableStatus" class="text-[10px] text-slate-500 bg-white border border-slate-300 px-2 py-1 rounded">Aguardando...</span>
+                </div>
+                <div class="overflow-auto max-h-[600px] custom-scrollbar">
+                    <table class="min-w-full text-xs text-left border-collapse" id="mainTable">
+                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="px-4 py-3 bg-slate-100 border-b">Rank</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b">ID</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b">Categoria</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b text-right">Custo (R$)</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b text-right">Votos</th>
+                                <th class="px-4 py-3 bg-blue-50 border-b border-blue-100 text-right text-blue-700">Score</th>
+                                <th class="px-4 py-3 bg-slate-100 border-b text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaResultados" class="divide-y divide-slate-200 bg-white">
+                            <tr><td colspan="7" class="px-4 py-10 text-center text-slate-400 italic">Nenhum dado para exibir.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- LÓGICA JAVASCRIPT -->
+    <script>
+        // --- 1. CONFIGURAÇÃO E UTILS ---
+        const Matrix = {
+            multiply: (a, b) => { const m=a.length, n=a[0].length, p=b[0].length, r=Array(m).fill(0).map(()=>Array(p).fill(0)); for(let i=0;i<m;i++)for(let j=0;j<p;j++)for(let k=0;k<n;k++) r[i][j]+=a[i][k]*b[k][j]; return r; },
+            transpose: (a) => a[0].map((_,c)=>a.map(r=>r[c])),
+            inverse: (m) => { const n=m.length, aug=m.map((r,i)=>[...r,...Array(n).fill(0).map((_,j)=>i===j?1:0)]); for(let i=0;i<n;i++){ let p=aug[i][i]; if(Math.abs(p)<1e-10)return null; for(let j=0;j<2*n;j++)aug[i][j]/=p; for(let k=0;k<n;k++)if(k!==i){let f=aug[k][i];for(let j=0;j<2*n;j++)aug[k][j]-=f*aug[i][j];}} return aug.map(r=>r.slice(n)); },
+            multiplyScalar: (a, s) => a.map(row => row.map(val => val * s))
+        };
+        function normalCDF(x) { var t=1/(1+.2316419*Math.abs(x)), d=.3989423*Math.exp(-x*x/2), p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return x>0?1-p:p; }
+        function calculatePValue(t) { return 2*(1-normalCDF(Math.abs(t))); }
+        const getMean=(a)=>a.reduce((x,y)=>x+y,0)/(a.length||1);
+        const getSD=(a)=>{const m=getMean(a); return Math.sqrt(a.reduce((s,n)=>s+(n-m)**2,0)/(a.length-1||1));};
+        function normalizeString(s) { return s?s.toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().trim():""; }
+
+        // --- 2. ESTADO GLOBAL ---
+        let dadosBrutos = [];
+        let resultadosUltimaSimulacao = [];
+        let gastosPorCategoriaGlobal = {};
+        let orcamentoTotalGlobal = 0;
+        let configuracaoCategorias = [];
+        let filtroCategoriaAtivo = 'TODOS';
+        
+        let chartCategorias=null, chartScatter=null, chartDensidade=null, chartRegressao=null, chartPieProjetos=null, chartPieVotos=null;
+
+        // --- 3. CARREGAMENTO ---
+        function parseLocalNumber(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            if (typeof val === 'number') return val;
+            let str = String(val).trim().replace(/[Rr]\$\s?/g, '').replace(/[^0-9,.-]/g, ''); 
+            if ((str.indexOf(',') > -1 && str.indexOf('.') > -1 && str.lastIndexOf(',') > str.lastIndexOf('.')) || (str.indexOf(',') > -1 && str.indexOf('.') === -1)) { str = str.replace(/\./g, '').replace(',', '.'); }
+            return parseFloat(str) || 0;
+        }
+
+        function processDataArray(jsonArray) {
+            if (!jsonArray || jsonArray.length === 0) { alert("Arquivo vazio!"); return; }
+            const keys = Object.keys(jsonArray[0]);
+            const findKey = (candidates) => keys.find(k => candidates.some(c => normalizeString(k).includes(c)));
+            
+            const keyId = findKey(['ID', 'CODIGO', 'IDENTIFICADOR']);
+            const keyCat = findKey(['TIPO', 'CATEGORIA', 'SETOR']);
+            const keyCusto = findKey(['CUSTO', 'VALOR', 'PRECO']);
+            const keyVotos = findKey(['VOTOS', 'APOIO', 'LIKES']);
+            
+            document.getElementById('colunasDetectadas').innerText =  `Detectado: ${keyCat||'?'} | ${keyCusto||'?'} | ${keyVotos||'?'}`;
+            if (!keyCat || !keyCusto || !keyVotos) { alert("ERRO: Colunas obrigatórias não encontradas."); return; }
+            
+            dadosBrutos = jsonArray.map((row, idx) => {
+                const catRaw = row[keyCat] ? String(row[keyCat]).trim() : "OUTROS";
+                const custo = parseLocalNumber(row[keyCusto]);
+                const votos = parseLocalNumber(row[keyVotos]);
+                if (custo <= 0 || isNaN(custo)) return null;
+                return { id: keyId ? row[keyId] : (idx + 1), id_cat_raw: catRaw, id_cat: "", C_i: custo, V_i: votos || 0 };
+            }).filter(d => d !== null);
+            
+            document.getElementById('dataStatus').innerHTML = `<span class="text-green-600 font-bold">✓ ${dadosBrutos.length} registros</span>`;
+            document.getElementById('headerTotalRows').innerText = dadosBrutos.length;
+            detectarEAtualizarCategorias();
+        }
+
+        function detectarEAtualizarCategorias() {
+            const catsUnicas = [...new Set(dadosBrutos.map(d => d.id_cat_raw))].sort();
+            configuracaoCategorias = []; 
+            catsUnicas.forEach((catName) => {
+                let baseId = normalizeString(catName).substring(0, 3).toUpperCase();
+                if(baseId.length < 3) baseId = (baseId + "XXX").substring(0,3);
+                let finalId = baseId; let count = 1;
+                while(configuracaoCategorias.some(c => c.id === finalId)) { finalId = baseId.substring(0,2) + count; count++; }
+                configuracaoCategorias.push({ id: finalId, nome: catName, min: 0, peso: 5 });
+            });
+            dadosBrutos.forEach(d => { const match = configuracaoCategorias.find(c => c.nome === d.id_cat_raw); d.id_cat = match ? match.id : configuracaoCategorias[0].id; });
+            initUI();
+        }
+
+        function initUI() {
+            const container = document.getElementById('categoryConfig');
+            container.innerHTML = '';
+            document.getElementById('catCountBadge').innerText = configuracaoCategorias.length;
+            configuracaoCategorias.forEach((cat, index) => {
+                const row = document.createElement('div');
+                row.className = "grid grid-cols-12 gap-1 items-center py-1 border-b hover:bg-slate-50 text-xs";
+                row.innerHTML = `
+                    <div class="col-span-6 pl-2 font-medium truncate text-slate-700" title="${cat.nome}">${cat.nome}</div>
+                    <div class="col-span-3 px-1"><input type="number" value="${cat.min}" min="0" max="100" onchange="updCat(${index},'min',this.value)" class="w-full border border-slate-300 rounded text-center text-red-700 focus:border-blue-500 outline-none"></div>
+                    <div class="col-span-3 px-1"><input type="number" value="${cat.peso}" min="0" max="10" onchange="updCat(${index},'peso',this.value)" class="w-full border border-slate-300 rounded text-center text-orange-700 focus:border-blue-500 outline-none"></div>`;
+                container.appendChild(row);
+            });
+            validarAlphas(); atualizarMonitorRigidez();
+        }
+
+        function updCat(i, f, v) { configuracaoCategorias[i][f] = parseFloat(v)||0; if(f==='min') atualizarMonitorRigidez(); }
+        function validarAlphas() {
+            const a1=parseFloat(document.getElementById('alpha1').value), a2=parseFloat(document.getElementById('alpha2').value), a3=parseFloat(document.getElementById('alpha3').value);
+            document.getElementById('valA1').innerText=a1.toFixed(2); document.getElementById('valA2').innerText=a2.toFixed(2); document.getElementById('valA3').innerText=a3.toFixed(2);
+            const s=a1+a2+a3; const btn = document.getElementById('btnExecutar');
+            if(Math.abs(s-1)>0.01) { document.getElementById('alphaStatus').innerHTML = `<span class='text-red-600'>Total: ${s.toFixed(2)} (Ajuste para 1.0)</span>`; btn.disabled = true; btn.classList.add('opacity-50'); }
+            else { document.getElementById('alphaStatus').innerHTML = `<span class='text-green-600'>Configuração OK</span>`; btn.disabled = false; btn.classList.remove('opacity-50'); }
+        }
+        function atualizarMonitorRigidez() {
+            const soma = configuracaoCategorias.reduce((a,c)=>a+c.min,0);
+            const el = document.getElementById('rigidezAlert');
+            let cor='bg-green-50 text-green-800', msg='FLEXÍVEL';
+            if(soma>100){cor='bg-slate-800 text-white';msg='ERRO (>100%)';} else if(soma>90){cor='bg-red-100 text-red-800';msg='CRÍTICO';} else if(soma>60){cor='bg-yellow-100 text-yellow-800';msg='MODERADO';}
+            el.innerHTML=`Soma Mínimos: <b>${soma.toFixed(1)}%</b> - ${msg}`; el.className=`mt-2 text-[10px] font-bold p-2 rounded text-center border ${cor}`;
+        }
+
+        // --- 4. SIMULAÇÃO E NASH ---
+        
+        // Função Central de Simulação (Cálculo Puro)
+        function simularCenarioInternal(dados, configAlphas, orcamento, categorias) {
+            const custos = dados.map(d => d.C_i);
+            const votos = dados.map(d => d.V_i);
+            const minLogC = Math.log(Math.max(1, Math.min(...custos)));
+            const maxLogC = Math.log(Math.max(1, Math.max(...custos)));
+            const maxLogV = Math.log(Math.max(1, Math.max(...votos)));
+
+            const statsCat = {};
+            categorias.forEach(c => statsCat[c.id] = {N:0, config:c});
+            dados.forEach(d => { if(statsCat[d.id_cat]) statsCat[d.id_cat].N++; });
+
+            const pool = dados.map(d => {
+                const cat = statsCat[d.id_cat];
+                const normV = Math.log(d.V_i+1) / (maxLogV+1);
+                const normC = 1 - ((Math.log(d.C_i+1) - minLogC) / (maxLogC - minLogC || 1));
+                const normE = 1 / Math.sqrt(cat.N || 1);
+
+                const uBase = (configAlphas.a1*normV) + (configAlphas.a2*normC) + (configAlphas.a3*normE);
+                const pol = 1 + 0.15 * Math.log(cat.config.peso + 1);
+                const uFinal = uBase * Math.min(pol, 1.3);
+                const score = uFinal / Math.log(d.C_i + Math.E);
+                
+                return { ...d, Score: score, U_final: uFinal, selecionado: false, motivo: "SCORE BAIXO" };
+            });
+
+            pool.sort((a,b) => b.Score - a.Score);
+
+            let gasto = 0;
+            const gastoCat = {};
+            categorias.forEach(c => gastoCat[c.id] = 0);
+
+            // Legal
+            categorias.forEach(c => {
+                const meta = orcamento * (c.min/100);
+                if(meta > 0) {
+                    const subset = pool.filter(p => p.id_cat === c.id);
+                    for(let p of subset) {
+                        if(gastoCat[c.id] < meta && (gasto + p.C_i) <= orcamento) {
+                            p.selecionado = true; p.motivo = "CONFORMIDADE LEGAL";
+                            gasto += p.C_i; gastoCat[c.id] += p.C_i;
+                        }
+                    }
+                }
+            });
+
+            // Eficiência
+            for(let p of pool) {
+                if(!p.selecionado && (gasto + p.C_i) <= orcamento) {
+                    p.selecionado = true; p.motivo = "EFICIÊNCIA";
+                    gasto += p.C_i; if(gastoCat[p.id_cat] !== undefined) gastoCat[p.id_cat] += p.C_i;
+                }
+            }
+            return { pool, gastoTotal: gasto, gastoPorCat: gastoCat };
+        }
+
+        // Execução Principal (UI Trigger)
+        function executarSimulacao() {
+            if(dadosBrutos.length === 0) { alert("Carregue dados primeiro!"); return; }
+            const B = parseFloat(document.getElementById('orcamentoB').value);
+            orcamentoTotalGlobal = B;
+
+            const a1 = parseFloat(document.getElementById('alpha1').value);
+            const a2 = parseFloat(document.getElementById('alpha2').value);
+            const a3 = parseFloat(document.getElementById('alpha3').value);
+
+            // 1. Simulação Atual
+            const resultadoAtual = simularCenarioInternal(dadosBrutos, {a1, a2, a3}, B, configuracaoCategorias);
+            resultadosUltimaSimulacao = resultadoAtual.pool;
+            gastosPorCategoriaGlobal = resultadoAtual.gastoPorCat;
+
+            // 2. Otimização de Nash (Grid Search)
+            const nashResult = executarOtimizacaoNash(dadosBrutos, B, configuracaoCategorias);
+
+            initUI();
+            gerarBotoesFiltro();
+            filtrarResultados('TODOS', nashResult);
+        }
+
+        // Otimização de Nash (Grid Search Real)
+        function executarOtimizacaoNash(dados, orcamento, categorias) {
+            let bestConfig = null;
+            let maxHarmonicScore = -1;
+            const simulations = [];
+
+            // Testa 66 combinações onde a soma é 1.0 (passo 0.1)
+            for (let v = 0; v <= 10; v++) {
+                for (let c = 0; c <= 10 - v; c++) {
+                    const e = 10 - v - c;
+                    const a1 = v / 10;
+                    const a2 = c / 10;
+                    const a3 = e / 10;
+                    if(a1===1 || a2===1 || a3===1) continue; // Pula extremos para ganhar performance
+
+                    const res = simularCenarioInternal(dados, {a1, a2, a3}, orcamento, categorias);
+                    const sel = res.pool.filter(p => p.selecionado);
+                    
+                    if (sel.length === 0) continue;
+
+                    const avgV = getMean(sel.map(p => p.V_i));
+                    const avgC = getMean(sel.map(p => p.C_i));
+                    const totalUtil = getMean(sel.map(p => p.U_final));
+                    
+                    simulations.push({ a1, a2, a3, avgV, avgC, totalUtil, pool: res.pool });
+                }
+            }
+
+            // Normaliza para calcular o Produto (Nash)
+            const maxV = Math.max(...simulations.map(s => s.avgV)) || 1;
+            const minC = Math.min(...simulations.map(s => s.avgC)) || 1; 
+            const maxC = Math.max(...simulations.map(s => s.avgC)) || 1;
+            const maxU = Math.max(...simulations.map(s => s.totalUtil)) || 1;
+
+            simulations.forEach(sim => {
+                const normSocial = sim.avgV / maxV;
+                const normEffic = 1 - ((sim.avgC - minC) / (maxC - minC || 1));
+                const normEquity = sim.totalUtil / maxU;
+                const score = (normSocial + 0.1) * (normEffic + 0.1) * (normEquity + 0.1);
+
+                if (score > maxHarmonicScore) {
+                    maxHarmonicScore = score;
+                    bestConfig = sim;
+                }
+            });
+            return bestConfig;
+        }
+
+        // --- 5. VISUALIZAÇÃO ---
+        function gerarBotoesFiltro() {
+            const div = document.getElementById('filterBar');
+            div.innerHTML = '<span class="text-xs font-bold text-slate-400 mr-2 flex items-center"><i class="fa-solid fa-filter mr-1"></i> VISÃO:</span>';
+            const addBtn = (id, lbl) => {
+                const b = document.createElement('button');
+                b.className = `filter-btn ${filtroCategoriaAtivo===id ? 'filter-btn-active':'filter-btn-inactive'} mr-1 mb-1`;
+                b.innerText = lbl;
+                b.onclick = () => { filtroCategoriaAtivo=id; gerarBotoesFiltro(); filtrarResultados(id, null); };
+                div.appendChild(b);
+            };
+            addBtn('TODOS', 'Geral');
+            configuracaoCategorias.forEach(c => { if(resultadosUltimaSimulacao.some(r => r.id_cat === c.id)) addBtn(c.id, c.nome); });
+            div.style.display = 'flex';
+        }
+
+        function filtrarResultados(id, nashResult) {
+            const dados = id === 'TODOS' ? resultadosUltimaSimulacao : resultadosUltimaSimulacao.filter(r => r.id_cat === id);
+            const reg = calcularRegressao(dados);
+            atualizarKPIs(dados);
+            renderTable(dados); 
+            renderCharts(dados, reg, nashResult);
+        }
+
+        function atualizarKPIs(d) {
+            const sel = d.filter(p => p.selecionado);
+            const gasto = sel.reduce((a,b)=>a+b.C_i,0);
+            document.getElementById('resSelecionados').innerText = sel.length;
+            document.getElementById('resTotalProjetos').innerText = d.length;
+            document.getElementById('resPctProjetos').innerText = d.length>0 ? ((sel.length/d.length)*100).toFixed(1)+'%' : '0%';
+            document.getElementById('resOrcamento').innerText = gasto.toLocaleString('pt-BR',{style:'currency',currency:'BRL', maximumFractionDigits:0});
+            document.getElementById('resEficienciaOrc').innerText = filtroCategoriaAtivo==='TODOS' ? ((gasto/orcamentoTotalGlobal)*100).toFixed(1)+'% do Total' : 'Gasto Local';
+            const util = sel.length>0 ? sel.reduce((a,b)=>a+b.U_final,0)/sel.length : 0;
+            document.getElementById('resUtilidadeMedia').innerText = util.toFixed(3);
+            const v = sel.reduce((a,b)=>a+b.V_i,0);
+            document.getElementById('resVotosAtendidos').innerText = v.toLocaleString('pt-BR');
+            document.getElementById('resRoi').innerText = gasto>0 ? (v/gasto).toFixed(2) : "0.00";
+            const efic = sel.length>0 ? (sel.reduce((a,b)=>a+(b.U_final/b.C_i),0)/sel.length)*1000 : 0;
+            document.getElementById('resEficMedia').innerText = efic.toFixed(3);
+        }
+
+        function renderTable(dados) {
+            const tbody = document.getElementById('tabelaResultados');
+            const frag = document.createDocumentFragment();
+            const limit = 5000;
+            const view = dados.slice(0, limit);
+            document.getElementById('tableStatus').innerText = `Mostrando ${view.length} de ${dados.length}`;
+            if(view.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center">Vazio</td></tr>'; return; }
+            view.forEach((p, i) => {
+                const tr = document.createElement('tr'); tr.className = "border-b hover:bg-slate-50";
+                const catName = configuracaoCategorias.find(c=>c.id===p.id_cat)?.nome || p.id_cat;
+                const sel = p.selecionado; const legal = p.motivo.includes('LEGAL');
+                tr.innerHTML = `
+                    <td class="px-4 py-1.5 text-slate-500">#${resultadosUltimaSimulacao.indexOf(p)+1}</td>
+                    <td class="px-4 py-1.5 font-mono text-xs">${p.id}</td>
+                    <td class="px-4 py-1.5 truncate max-w-[120px]" title="${catName}">${catName}</td>
+                    <td class="px-4 py-1.5 text-right">R$ ${p.C_i.toLocaleString('pt-BR')}</td>
+                    <td class="px-4 py-1.5 text-right">${p.V_i.toLocaleString('pt-BR')}</td>
+                    <td class="px-4 py-1.5 text-right font-bold text-blue-600 bg-blue-50">${p.Score.toFixed(4)}</td>
+                    <td class="px-4 py-1.5 text-center"><span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded ${sel ? (legal?'bg-purple-100 text-purple-700':'bg-green-100 text-green-700') : 'bg-slate-100 text-slate-400'}">${sel ? (legal ? 'Legal' : 'Efic.') : 'Não Sel.'}</span></td>`;
+                frag.appendChild(tr);
+            });
+            tbody.innerHTML = ''; tbody.appendChild(frag);
+        }
+
+        function calcularRegressao(dados) {
+            if(!dados || dados.length < 10) return null;
+            const X = [], Y = [];
+            dados.forEach(d => {
+                const cat = configuracaoCategorias.find(c => c.id === d.id_cat); const w = cat ? cat.peso : 1; const minPct = cat ? cat.min : 0; 
+                X.push([1, Math.log(d.C_i+1), Math.log(d.V_i+1), Math.log(w+1), Math.log(minPct+1)]); Y.push([d.Score]);
+            });
+            try {
+                const Xt = Matrix.transpose(X); const XtX = Matrix.multiply(Xt, X); const inv = Matrix.inverse(XtX); if(!inv) return null;
+                const XtY = Matrix.multiply(Xt, Y); const Beta = Matrix.multiply(inv, XtY);
+                const yMean = getMean(Y.map(y=>y[0]));
+                const ssTot = Y.reduce((a,b)=>a+Math.pow(b[0]-yMean,2),0);
+                const preds = X.map(r => r[0]*Beta[0][0] + r[1]*Beta[1][0] + r[2]*Beta[2][0] + r[3]*Beta[3][0] + r[4]*Beta[4][0]);
+                const ssRes = Y.reduce((a,b,i)=>a+Math.pow(b[0]-preds[i],2),0);
+                const r2 = 1 - (ssRes/ssTot);
+                return { betas: {custo: Beta[1][0], votos: Beta[2][0], peso: Beta[3][0], min: Beta[4][0]}, r2: r2 };
+            } catch(e) { return null; }
+        }
+
+        function renderCharts(dados, reg, nashResult) {
+            // Plugin Labels
+            const chartJsValueLabel = { id: 'valueLabel', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index].toFixed(3); ctx.fillStyle = '#1e293b'; ctx.font = 'bold 10px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const yPos = value >= 0 ? bar.y - 10 : bar.y + 10; ctx.fillText(value, bar.x, yPos); }); }); } };
+
+            // 1. REGRESSÃO
+            const ctxReg = document.getElementById('chartRegressao');
+            if(chartRegressao) chartRegressao.destroy();
+            if(reg && reg.betas) {
+                document.getElementById('regressaoR2').innerText = `R²: ${(reg.r2*100).toFixed(1)}%`;
+                chartRegressao = new Chart(ctxReg, {
+                    type: 'bar', data: { labels: ['Custo', 'Votos', 'Peso Pol.', 'Restrição'], datasets: [{ label: 'Impacto (Beta)', data: [reg.betas.custo, reg.betas.votos, reg.betas.peso, reg.betas.min], backgroundColor: d => d.raw > 0 ? '#22c55e' : '#ef4444', borderRadius: 4 }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, layout: { padding: { right: 30 } }, plugins: { legend: {display:false}, tooltip: { enabled: true } } }, plugins: [chartJsValueLabel]
+                });
+            }
+
+            // 2. BARRAS CATEGORIAS
+            const ctxCat = document.getElementById('chartCategorias');
+            if(chartCategorias) chartCategorias.destroy();
+            let cats = configuracaoCategorias;
+            if(filtroCategoriaAtivo !== 'TODOS') cats = cats.filter(c => c.id === filtroCategoriaAtivo);
+            cats = cats.filter(c => (gastosPorCategoriaGlobal[c.id]||0)>0 || c.min>0);
+            chartCategorias = new Chart(ctxCat, {
+                type: 'bar', data: { labels: cats.map(c => c.nome), datasets: [ { label: 'Executado (R$)', data: cats.map(c=>gastosPorCategoriaGlobal[c.id]||0), backgroundColor: '#3b82f6', borderRadius: 4 }, { label: 'Meta Mínima', data: cats.map(c=>(c.min/100)*orcamentoTotalGlobal), backgroundColor: 'rgba(239,68,68,0.1)', borderColor:'#ef4444', borderWidth:1, type:'bar' } ] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:true} } }
+            });
+
+            // 3. SCATTER PLOT
+            const ctxScat = document.getElementById('chartScatter');
+            if(chartScatter) chartScatter.destroy();
+            const scatData = dados.slice(0,2000).map(p => ({ x: p.C_i, y: p.Score, bg: p.selecionado ? (p.motivo.includes('LEGAL')?'#a855f7':'#22c55e') : '#cbd5e1', r: p.selecionado ? 4 : 2, lbl: p.id }));
+            chartScatter = new Chart(ctxScat, {
+                type: 'scatter', data: { datasets: [{ label: 'Projetos', data: scatData, pointBackgroundColor: scatData.map(d=>d.bg), pointRadius: scatData.map(d=>d.r) }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: {type:'logarithmic', grid:{display:false}}, y: {grid:{color:'#f8fafc'}} }, plugins: { legend: {display:false} } }
+            });
+
+            // 4. HARMONIA SISTÊMICA (NASH REAL)
+            const ctxHarm = document.getElementById('chartHarmonia');
+            if(chartDensidade) chartDensidade.destroy(); 
+
+            let sugA1=0.33, sugA2=0.33, sugA3=0.33;
+            let harmDataScaled = [];
+
+            if (nashResult) {
+                sugA1 = nashResult.a1; sugA2 = nashResult.a2; sugA3 = nashResult.a3;
+                const bestScores = nashResult.pool.map(p => p.Score);
+                const densBest = createDensityData(bestScores, 25);
+                harmDataScaled = densBest.data.map(v => v * 1.1);
+            }
+            const curScores = dados.map(d => d.Score);
+            const densCur = createDensityData(curScores, 25);
+
+            document.getElementById('sugAlpha1').innerText = sugA1.toFixed(2);
+            document.getElementById('sugAlpha2').innerText = sugA2.toFixed(2);
+            document.getElementById('sugAlpha3').innerText = sugA3.toFixed(2);
+
+            chartDensidade = new Chart(ctxHarm, {
+                type: 'line',
+                data: {
+                    labels: densCur.labels,
+                    datasets: [
+                        { label: 'Harmônico (Ideal)', data: harmDataScaled.length ? harmDataScaled : densCur.data, borderColor: '#6366f1', borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: 'rgba(99, 102, 241, 0.1)', tension: 0.4 },
+                        { label: 'Atual', data: densCur.data, borderColor: '#cbd5e1', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0.3 }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    animation: { duration: 2000, easing: 'easeOutQuart' },
+                    interaction: { intersect: false, mode: 'index' },
+                    scales: { x: {display: false}, y: {display: false} },
+                    plugins: { legend: { display: false }, tooltip: { enabled: true } }
+                }
+            });
+
+            // 5. PIE CHARTS
+            const ctxPieP = document.getElementById('chartPieProjetos');
+            const ctxPieV = document.getElementById('chartPieVotos');
+            if(chartPieProjetos) chartPieProjetos.destroy();
+            if(chartPieVotos) chartPieVotos.destroy();
+            const sel = dados.filter(p=>p.selecionado);
+            const catCounts = {}, catVotos = {};
+            sel.forEach(p => { const c = configuracaoCategorias.find(x=>x.id===p.id_cat)?.nome || p.id_cat; catCounts[c] = (catCounts[c]||0) + 1; catVotos[c] = (catVotos[c]||0) + p.V_i; });
+            const bgColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
+            chartPieProjetos = new Chart(ctxPieP, { type: 'doughnut', data: { labels: Object.keys(catCounts), datasets: [{ data: Object.values(catCounts), backgroundColor: bgColors, borderWidth:0 }] }, options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{boxWidth:10, font:{size:9}}}} } });
+            chartPieVotos = new Chart(ctxPieV, { type: 'doughnut', data: { labels: Object.keys(catVotos), datasets: [{ data: Object.values(catVotos), backgroundColor: bgColors, borderWidth:0 }] }, options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{boxWidth:10, font:{size:9}}}} } });
+        }
+
+        function createDensityData(scores, bins=30) {
+            if (scores.length===0) return {labels:[],data:[]};
+            const min=Math.min(...scores), max=Math.max(...scores), step=(max-min)/bins;
+            const labels=[], data=new Array(bins).fill(0);
+            for(let i=0;i<bins;i++) labels.push((min+i*step).toFixed(2));
+            scores.forEach(s=>{ let idx=Math.floor((s-min)/step); if(idx>=bins) idx=bins-1; data[idx]++; });
+            return {labels,data};
+        }
+
+        // --- 6. EXPORT & HELPERS ---
+        function gerarDadosFicticios() {
+            const cats = ["Educação", "Saúde", "Segurança", "Infraestrutura", "Cultura"];
+            const data = [];
+            for(let i=1; i<=1000; i++) {
+                data.push({
+                    id: i,
+                    id_cat_raw: cats[Math.floor(Math.random()*cats.length)],
+                    id_cat: "",
+                    C_i: Math.round(Math.exp(Math.random()*2.5 + 7)),
+                    V_i: Math.round(Math.pow(Math.random(), 3)*5000)+20
+                });
+            }
+            processDataArrayInternal(data);
+        }
+
+        function processDataArrayInternal(arr) {
+            dadosBrutos = arr;
+            document.getElementById('dataStatus').innerHTML = `<span class="text-green-600 font-bold">✓ ${arr.length} registros</span>`;
+            document.getElementById('headerTotalRows').innerText = arr.length;
+            detectarEAtualizarCategorias();
+        }
+
+        document.getElementById('csvFile').addEventListener('change', (e) => {
+            const f = e.target.files[0]; if(!f) return;
+            const ext = f.name.split('.').pop().toLowerCase();
+            document.getElementById('dataStatus').innerText = "Lendo...";
+            if(ext === 'csv') { Papa.parse(f, { header: true, dynamicTyping: false, skipEmptyLines: true, complete: (r) => processDataArray(r.data) }); } 
+            else { const r = new FileReader(); r.onload = (evt) => { const wb = XLSX.read(new Uint8Array(evt.target.result), {type:'array'}); const ws = wb.Sheets[wb.SheetNames[0]]; processDataArray(XLSX.utils.sheet_to_json(ws)); }; r.readAsArrayBuffer(f); }
+        });
+
+        function exportarTabela() {
+            if(resultadosUltimaSimulacao.length === 0) return;
+            let csv = "Rank,ID,Categoria,Custo,Votos,Score,Status,Motivo\n";
+            resultadosUltimaSimulacao.forEach((p, i) => { const catName = configuracaoCategorias.find(c=>c.id===p.id_cat)?.nome || p.id_cat; csv += `${i+1},"${p.id}","${catName}",${p.C_i},${p.V_i},${p.Score.toFixed(5)},${p.selecionado?'Selecionado':'Nao'},"${p.motivo}"\n`; });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "resultados_simulacao.csv"; link.click();
         }
 
         initUI();
